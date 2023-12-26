@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "928534842281",
+    "project_id": "shared-budget-book",
+    "storage_bucket": "shared-budget-book.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:928534842281:android:50bb1c1b7a3b913af192b8",
+        "android_client_info": {
+          "package_name": "com.example.shared_budget_book"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMYeeo-j2dQxZumwD4N47BCdWjsfUCWCw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
