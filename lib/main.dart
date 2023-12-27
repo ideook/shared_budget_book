@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:intl/intl.dart';
 import 'firebase_options.dart';
+import 'package:shared_budget_book/screens/add_expense_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,27 +20,25 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '공유예산가계부',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        // Define the default brightness and colors.
+        brightness: Brightness.dark,
+        primaryColor: Colors.blueGrey[900],
+
+        // Define the default font family.
+        //fontFamily: 'Georgia',
+
+        // textTheme: const TextTheme(
+        //   displayLarge: TextStyle(color: Colors.white, fontSize: 72.0, fontWeight: FontWeight.bold),
+        //   displayMedium: TextStyle(color: Colors.white, fontSize: 72.0, fontWeight: FontWeight.bold),
+        //   displaySmall: TextStyle(color: Colors.white, fontSize: 72.0, fontWeight: FontWeight.bold),
+        //   titleLarge: TextStyle(color: Colors.white, fontSize: 36.0, fontWeight: FontWeight.bold),
+        //   titleMedium: TextStyle(color: Colors.white, fontSize: 24.0, fontWeight: FontWeight.bold),
+        //   // Define other styles as needed
+        // ),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: '공유예산가계부'),
     );
   }
 }
@@ -62,7 +62,24 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  DateTime selectedDate = DateTime.now();
+  bool isDatePickerShown = false;
+
   int _counter = 0;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != selectedDate) {
+      setState(() {
+        selectedDate = picked;
+      });
+    }
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -77,6 +94,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 다크 테마 색상 정의
+    Color backgroundColor = const Color(0xFF121212); // 배경 색상
+    Color foregroundColor = Colors.white; // 텍스트 색상
+    Color accentColor = const Color(0xFF1F1F1F); // 입력 필드 배경 색상
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -84,48 +106,79 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         // TRY THIS: Try changing the color here to a specific color (to
         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
         // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: backgroundColor,
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      body: SingleChildScrollView(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+          children: [
+            ListTile(
+              title: Row(
+                mainAxisSize: MainAxisSize.min, // Use minimum space required by children
+                children: [
+                  Text(DateFormat('yyyy년 M월 d일').format(selectedDate)),
+                  const Icon(Icons.arrow_drop_down), // Icon right next to the text
+                ],
+              ),
+              onTap: () {
+                // 달력 표시 상태를 토글합니다.
+                setState(() {
+                  isDatePickerShown = !isDatePickerShown;
+                });
+              },
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
+            // CalendarDatePicker를 표시하거나 숨깁니다.
+            if (isDatePickerShown)
+              CalendarDatePicker(
+                initialDate: selectedDate,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2101),
+                onDateChanged: (newDate) {
+                  setState(() {
+                    selectedDate = newDate;
+                    isDatePickerShown = false;
+                  });
+                },
+              ),
+            // 날짜가 선택되었을 때 나타나는 '지출 입력' 버튼
+            // ListTile(
+            //   title: const Text('지출 입력'),
+            //   onTap: () {
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //         builder: (context) => AddExpenseScreen(selectedDate: selectedDate),
+            //       ),
+            //     );
+            //   },
+            // ),
+            // 나머지 UI 요소들...
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        //onPressed: _incrementCounter,
+        backgroundColor: const Color(0xFF3182F7),
+        onPressed: () {
+          // Navigate to the AddExpenseScreen when the button is pressed
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddExpenseScreen(selectedDate: selectedDate), // 여기에 선택된 날짜를 전달합니다.
+            ),
+          );
+        },
         tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        child: const Icon(
+          Icons.add,
+        ),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
