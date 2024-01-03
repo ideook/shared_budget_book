@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_budget_book/provider/summary_date_provider.dart';
 import 'package:shared_budget_book/provider/view_mode_provider.dart';
 import 'package:shared_budget_book/screens/share_screen.dart';
 import 'package:shared_budget_book/services/money_input_formatter.dart';
@@ -15,8 +16,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool isWeeklyView = true; // 예산 단위 토글 상태
-  double weeklyBudget = 0.0;
-  double monthlyBudget = 0.0;
+  num _weeklyBudget = 0.0;
+  num _monthlyBudget = 0.0;
   // 다크 테마 색상 정의
   Color backgroundColor = const Color(0xFF121212); // 배경 색상
   Color foregroundColor = Colors.white; // 텍스트 색상
@@ -29,14 +30,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _monthlyBudgetController.text = monthlyBudget.toString();
-    _weeklyBudgetController.text = weeklyBudget.toString();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      var prov = Provider.of<SummaryDataProvider>(context, listen: false);
+
+      _monthlyBudgetController.text = prov.budget_montly.toString();
+      _weeklyBudgetController.text = prov.budget_weekly.toString();
+
+      setState(() {
+        _weeklyBudget = prov.budget_weekly;
+        _monthlyBudget = prov.budget_montly;
+      });
+    });
   }
 
   void _showEditBudgetDialog(String budgetType) {
     // 해당 예산 유형에 따라 컨트롤러 및 변수 설정
     final TextEditingController controller = (budgetType == '주간') ? _weeklyBudgetController : _monthlyBudgetController;
-    double budgetValue = (budgetType == '주간') ? weeklyBudget : monthlyBudget;
+    num budgetValue = (budgetType == '주간') ? _weeklyBudget : _monthlyBudget;
 
     controller.text = budgetValue.toString();
 
@@ -62,13 +73,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 setState(() {
                   String input = controller.text.replaceAll(',', ''); // 쉼표 제거
-                  double newValue = 0;
+                  num newValue = 0;
                   if (budgetType == '주간') {
-                    newValue = double.tryParse(input) ?? weeklyBudget;
-                    weeklyBudget = newValue;
+                    newValue = double.tryParse(input) ?? _weeklyBudget;
+                    Provider.of<SummaryDataProvider>(context, listen: false).setBudgetWeekly(newValue);
                   } else {
-                    newValue = double.tryParse(input) ?? monthlyBudget;
-                    monthlyBudget = newValue;
+                    newValue = double.tryParse(input) ?? _monthlyBudget;
+                    Provider.of<SummaryDataProvider>(context, listen: false).setBudgetMontly(newValue);
                   }
                 });
                 Navigator.of(context).pop();
@@ -82,6 +93,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var prov = Provider.of<SummaryDataProvider>(context, listen: false);
+
+    _weeklyBudget = prov.budget_weekly;
+    _monthlyBudget = prov.budget_montly;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('설정'),
@@ -110,6 +126,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onChanged: (bool value) {
                         setState(() {
                           Provider.of<ViewModeProvider>(context, listen: false).toggleViewMode();
+                          isWeeklyView = !isWeeklyView;
                         });
                       },
                     ),
@@ -138,7 +155,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(0.0),
                       child: Text(
-                        '$weeklyBudget원',
+                        '$_weeklyBudget원',
                         style: const TextStyle(
                           fontSize: 16.0,
                         ),
@@ -163,7 +180,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: () => _showEditBudgetDialog('월간'),
                     child: Container(
                       padding: const EdgeInsets.all(0.0),
-                      child: Text('$monthlyBudget원', style: const TextStyle(fontSize: 16.0)),
+                      child: Text('$_monthlyBudget원', style: const TextStyle(fontSize: 16.0)),
                     ),
                   ),
                 ],

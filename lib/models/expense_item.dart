@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:week_of_year/date_week_extensions.dart';
 
 class ExpenseItem {
   final num amount;
@@ -18,4 +19,7 @@ class ExpenseItem {
   });
 
   String get date => DateFormat('yyyy-MM-dd').format(datetime);
+  int get year => datetime.year;
+  int get month => datetime.month;
+  int get weekOfYear => datetime.weekOfYear;
 }

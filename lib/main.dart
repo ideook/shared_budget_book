@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_budget_book/models/expense_data.dart';
 import 'package:shared_budget_book/models/expense_item.dart';
 import 'package:shared_budget_book/models/user_data.dart';
+import 'package:shared_budget_book/provider/summary_date_provider.dart';
 import 'package:shared_budget_book/provider/view_mode_provider.dart';
 import 'package:shared_budget_book/screens/settings_screen.dart';
 import 'package:shared_budget_book/services/money_input_formatter.dart';
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
         providers: [
           ChangeNotifierProvider(create: (_) => ExpenseData()),
           ChangeNotifierProvider(create: (_) => ViewModeProvider()),
+          ChangeNotifierProvider(create: (_) => SummaryDataProvider()),
         ],
         child: MaterialApp(
           title: '공유예산가계부',
@@ -55,33 +57,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _currentPageIndex = 0;
-  List<ExpenseItem> _currentFilteredItems = [];
-
   String _userId = 'user1_UID_123456';
-  bool _isWeeklyView = true; // 주간 또는 월간 보기 모드
-  PageController? pageController;
+  int _initialPageCount = 1000;
+  List<ExpenseItem> _allExpenseItems = [];
+  List<ExpenseItem> _currentPageExpenseItems = [];
+  DateTime _selectedDate = DateTime(1900, 1, 1);
+  bool _isWeeklyView = false; // 주간 또는 월간 보기 모드
+
+  PageController _pageController = PageController();
 
   DateTime? currentVisibleSectionDate;
-  //DateTime? topVisibleItemDate = DateTime.now();
-
-  double _budget = 50000.0;
-  double _expenses = 0.0;
-  double _balance = 50000.0;
 
   final TextEditingController _budgetController = TextEditingController();
   final FocusNode _budgetFocusNode = FocusNode();
 
-  DateTime _selectedDate = DateTime(1900, 1, 1);
   bool isDatePickerShown = false;
-  ScrollController _scrollController = ScrollController();
-  GroupedItemScrollController itemScrollController = GroupedItemScrollController();
-  List<ExpenseItem> allExpenseItems = []; // 6개월치 전체 데이터
-  //List<ExpenseItem> expenseItems = [];
-  //List<ExpenseItem> _filteredItems = [];
+
   bool _isLoading = false;
   int weekNumber = 1;
-  final int _pageSize = 30;
+
   Map<String, UserInfo> userInfos = {};
   List<Map<String, dynamic>> dataList = [];
   Map<String, bool> categoryChecked = {};
@@ -92,9 +86,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    // 초기 데이터 로드 및 페이지 컨트롤러 설정
-    //_updateDataForPage(_currentPageIndex);
-
     setState(() {
       userInfos = {
         'user1_UID_123456': UserInfo(uid: 'user1_UID_123456', iconPath: 'assets/images/user1.jpg', name: 'Alice'),
@@ -102,69 +93,128 @@ class _MyHomePageState extends State<MyHomePage> {
         'user3_UID_345678': UserInfo(uid: 'user3_UID_345678', iconPath: 'assets/images/user3.png', name: 'Charlie'),
       };
     });
-    _loadInitialData();
+    _loadInitialData(); // 6개월치 데이터 생성
 
     //_updateDataForPage(_currentPageIndex);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => checkAndShowExpenseData());
-
-    // addPostFrameCallback 내에서 isWeeklyView 상태를 사용하여 PageController 초기화
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      bool isWeeklyView = Provider.of<ViewModeProvider>(context, listen: false).isWeeklyView;
-      _isWeeklyView = isWeeklyView;
-    });
-
-    int initialPage = calculateInitialPageIndex(_isWeeklyView);
-    pageController = PageController(initialPage: initialPage);
-
-    _selectedDate = DateTime.now();
-    _updateDataForPage(initialPage);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _budgetFocusNode.requestFocus(); // 숫자 입력 필드에 자동 포커스
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      var list = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, _initialPageCount);
+      Provider.of<SummaryDataProvider>(context, listen: false).setExpenses(list, _isWeeklyView);
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => checkAndShowExpenseData());
+
+    _pageController = PageController(initialPage: _initialPageCount); // 1000 = 약19년/주 또는 약83.3년/월, 이번주/달
+    _pageController.addListener(() {
+      var pageIndex = _pageController.page?.round();
+      _currentPageExpenseItems = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, pageIndex!);
+    });
+
+    // 999-> 저번주/달
+    // 1001-> 다음주/달
+
+    _selectedDate = DateTime.now();
   }
 
   @override
   void dispose() {
     _budgetController.dispose();
-    pageController?.dispose(); // PageController를 dispose에 추가
+    _pageController.dispose();
 
     super.dispose();
   }
 
-  void _updateDataForPage(int pageIndex) {
-    // 현재 페이지 인덱스에 따른 데이터 계산
-    DateInfo dateInfo = calculateDateInfoBasedOnIndex(pageIndex, _isWeeklyView);
-    List<ExpenseItem> filteredItems = filterExpensesByDateInfo(allExpenseItems, dateInfo);
-
-    setState(() {
-      _currentPageIndex = pageIndex;
-      _currentFilteredItems = filteredItems;
-      _selectedDate = DateTime(dateInfo.year, dateInfo.month, dateInfo.baseDay);
-    });
-
-    setState(() {
-      _expenses = filteredItems.fold(0.0, (total, item) => total + item.amount);
-      _balance = _budget - _expenses;
-
-      Set<String> uniqueCategories = filteredItems.map((item) => item.category).toSet();
-      categoryChecked.clear();
-      for (String category in uniqueCategories) {
-        categoryChecked[category] = false;
-      }
-
-      Set<String> uniqueUsers = filteredItems.map((item) => item.userId).toSet();
-      userChecked.clear();
-      for (String userId in uniqueUsers) {
-        userChecked[userId] = false;
-      }
-    });
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _isWeeklyView = Provider.of<ViewModeProvider>(context).isWeeklyView;
   }
 
   void _loadInitialData() {
-    allExpenseItems = generateSixMonthsData(); // 6개월치 데이터 생성
+    _allExpenseItems = generateSixMonthsData();
   }
+
+  List<ExpenseItem> generateSixMonthsData() {
+    List<ExpenseItem> items = [];
+    Random random = Random();
+    List<String> categories = ["Food", "Transport", "Entertainment", "Education", "Health", "Shopping"];
+
+    List<String> uids = userInfos.keys.toList(); // UID 리스트
+    DateTime startDate = DateTime.now(); //.subtract(Duration(days: 180));
+
+    int pageIndex = _initialPageCount;
+    for (int day = 0; day < 180; day++) {
+      int itemCount = random.nextInt(6) + 0;
+      DateTime date = startDate.subtract(Duration(days: day)); //.add(Duration(days: day));
+
+      // if (_isWeeklyView) {
+      //   if (date.weekday == 7) {
+      //     pageIndex -= 1;
+      //   }
+      // } else {
+      //   if (date.add(Duration(days: 1)).day == 1) {
+      //     pageIndex -= 1;
+      //   }
+      // }
+
+      //var idx = 1000 % (7 - date.weekday);
+      // 3, 2, 1, 7, 6, 5, 4,
+
+      for (int i = 0; i < itemCount; i++) {
+        String category = categories[random.nextInt(categories.length)];
+        String uid = uids[random.nextInt(uids.length)]; // 무작위 UID 선택
+        String icon = userInfos[uid]!.iconPath; // UID에 해당하는 아이콘
+        double rawAmount = random.nextInt(50000) + 5000;
+        double amount = ((rawAmount / 100).round()) * 100;
+
+        items.add(
+          ExpenseItem(
+            amount: amount,
+            category: category,
+            icon: icon,
+            datetime: date,
+            userId: uid, // UID 추가
+          ),
+        );
+      }
+    }
+
+    items.sort((a, b) => a.datetime.compareTo(b.datetime));
+    return items;
+  }
+
+  // void _updateDataForPage(int pageIndex) {
+  //   // 현재 페이지 인덱스에 따른 데이터 계산
+  //   DateInfo dateInfo = calculateDateInfoBasedOnIndex(pageIndex, _isWeeklyView);
+  //   List<ExpenseItem> filteredItems = filterExpensesByDateInfo(_allExpenseItems, dateInfo);
+
+  //   setState(() {
+  //     _currentPageIndex = pageIndex;
+  //     _currentFilteredItems = filteredItems;
+  //     _selectedDate = DateTime(dateInfo.year, dateInfo.month, dateInfo.baseDay);
+  //   });
+
+  //   setState(() {
+  //     _expenses = filteredItems.fold(0.0, (total, item) => total + item.amount);
+  //     _balance = _budget - _expenses;
+
+  //     Set<String> uniqueCategories = filteredItems.map((item) => item.category).toSet();
+  //     categoryChecked.clear();
+  //     for (String category in uniqueCategories) {
+  //       categoryChecked[category] = false;
+  //     }
+
+  //     Set<String> uniqueUsers = filteredItems.map((item) => item.userId).toSet();
+  //     userChecked.clear();
+  //     for (String userId in uniqueUsers) {
+  //       userChecked[userId] = false;
+  //     }
+  //   });
+  // }
 
   // 1900.1.1부터 index 생성
   int calculateInitialPageIndex(bool isWeeklyView) {
@@ -177,16 +227,44 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void toggleViewMode(bool isWeeklyView) {
-    //setState(() {
-    // isWeeklyView 값이 변경되었을 때 필요한 로직 실행
-    int initialPage = calculateInitialPageIndex(_isWeeklyView);
-    pageController = PageController(initialPage: initialPage);
-    //int newPageIndex = calculateInitialPageIndex(isWeeklyView);
-    //pageController!.jumpToPage(newPageIndex); // 페이지 컨트롤러를 새 인덱스로 이동
+  // void toggleViewMode(bool isWeeklyView) {
+  //   //setState(() {
+  //   // isWeeklyView 값이 변경되었을 때 필요한 로직 실행
+  //   int initialPage = calculateInitialPageIndex(_isWeeklyView);
+  //   _pageController = PageController(initialPage: initialPage);
+  //   //int newPageIndex = calculateInitialPageIndex(isWeeklyView);
+  //   //pageController!.jumpToPage(newPageIndex); // 페이지 컨트롤러를 새 인덱스로 이동
 
-    _filterDataByPeriod(isWeeklyView); // 날짜 범위에 따라 데이터 필터링
-    //});
+  //   _filterDataByPeriod(isWeeklyView); // 날짜 범위에 따라 데이터 필터링
+  //   //});
+  // }
+
+  List<ExpenseItem> getExpensesByPageIndex(List<ExpenseItem> expenses, bool isWeeklyView, int index) {
+    DateTime nowDate = DateTime.now();
+    var subtract = _initialPageCount - index; // 1000 - 0 = 1000
+
+    DateTime monday = nowDate.subtract(Duration(days: nowDate.weekday - 1)); // 월
+    DateTime sunday = nowDate.subtract(Duration(days: nowDate.weekday - 7)); // 일
+
+    DateTime startDate;
+    DateTime endDate;
+
+    if (isWeeklyView) {
+      // index 1 차이가 1주
+      startDate = monday.subtract(Duration(days: subtract * 7)); // 월
+      endDate = sunday.subtract(Duration(days: subtract * 7)); // 일
+    } else {
+      // index 1 차이가 1달
+      startDate = DateTime(nowDate.year, nowDate.month - subtract, 1);
+      endDate = DateTime(nowDate.year, nowDate.month - subtract + 1, 0);
+    }
+
+    var list = expenses.where((expense) {
+      DateTime expenseDate = expense.datetime;
+      return expenseDate.isAfter(startDate) && expenseDate.isBefore(endDate);
+    }).toList();
+
+    return list;
   }
 
   List<ExpenseItem> filterExpensesByDateInfo(List<ExpenseItem> expenses, DateInfo dateInfo) {
@@ -218,66 +296,31 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   // 전체데이터 중 마지막데이터s 가져오기, 주간/월간
-  void _filterDataByPeriod(bool isWeeklyView) {
-    DateTime lastDate = allExpenseItems.last.datetime;
-    DateTime startDate, endDate;
+  // void _filterDataByPeriod(bool isWeeklyView) {
+  //   DateTime lastDate = _allExpenseItems.last.datetime;
+  //   DateTime startDate, endDate;
 
-    if (isWeeklyView) {
-      // 주간 보기: 해당 주의 시작과 끝 날짜 계산
-      int weekday = lastDate.weekday;
-      startDate = lastDate.subtract(Duration(days: weekday - 1)); // 주의 첫째 날
-      endDate = startDate.add(Duration(days: 6)); // 주의 마지막 날
-    } else {
-      // 월간 보기: 해당 월의 시작과 끝 날짜 계산
-      startDate = DateTime(lastDate.year, lastDate.month, 1); // 월의 첫째 날
-      endDate = DateTime(lastDate.year, lastDate.month + 1, 0); // 월의 마지막 날
-    }
+  //   if (isWeeklyView) {
+  //     // 주간 보기: 해당 주의 시작과 끝 날짜 계산
+  //     int weekday = lastDate.weekday;
+  //     startDate = lastDate.subtract(Duration(days: weekday - 1)); // 주의 첫째 날
+  //     endDate = startDate.add(Duration(days: 6)); // 주의 마지막 날
+  //   } else {
+  //     // 월간 보기: 해당 월의 시작과 끝 날짜 계산
+  //     startDate = DateTime(lastDate.year, lastDate.month, 1); // 월의 첫째 날
+  //     endDate = DateTime(lastDate.year, lastDate.month + 1, 0); // 월의 마지막 날
+  //   }
 
-    // allExpenseItems에서 startDate와 endDate 사이의 데이터 필터링
-    List<ExpenseItem> filteredItems = allExpenseItems.where((item) {
-      return item.datetime.isAfter(startDate) && item.datetime.isBefore(endDate);
-    }).toList();
+  //   // allExpenseItems에서 startDate와 endDate 사이의 데이터 필터링
+  //   List<ExpenseItem> filteredItems = _allExpenseItems.where((item) {
+  //     return item.datetime.isAfter(startDate) && item.datetime.isBefore(endDate);
+  //   }).toList();
 
-    // 필터링된 데이터로 화면 업데이트
-    setState(() {
-      _currentFilteredItems = filteredItems;
-    });
-  }
-
-  List<ExpenseItem> generateSixMonthsData() {
-    List<ExpenseItem> items = [];
-    Random random = Random();
-    List<String> categories = ["Food", "Transport", "Entertainment", "Education", "Health", "Shopping"];
-
-    List<String> uids = userInfos.keys.toList(); // UID 리스트
-    DateTime startDate = DateTime.now().subtract(Duration(days: 180));
-
-    for (int day = 0; day < 180; day++) {
-      int itemCount = random.nextInt(6) + 0;
-      DateTime date = startDate.add(Duration(days: day));
-
-      for (int i = 0; i < itemCount; i++) {
-        String category = categories[random.nextInt(categories.length)];
-        String uid = uids[random.nextInt(uids.length)]; // 무작위 UID 선택
-        String icon = userInfos[uid]!.iconPath; // UID에 해당하는 아이콘
-        double rawAmount = random.nextInt(50000) + 5000;
-        double amount = ((rawAmount / 100).round()) * 100;
-
-        items.add(
-          ExpenseItem(
-            amount: amount,
-            category: category,
-            icon: icon,
-            datetime: date,
-            userId: uid, // UID 추가
-          ),
-        );
-      }
-    }
-
-    items.sort((a, b) => a.datetime.compareTo(b.datetime));
-    return items;
-  }
+  //   // 필터링된 데이터로 화면 업데이트
+  //   setState(() {
+  //     _currentFilteredItems = filteredItems;
+  //   });
+  // }
 
   void _scrollToDate(DateTime selectedDate) {
     // final String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
@@ -315,7 +358,7 @@ class _MyHomePageState extends State<MyHomePage> {
       );
 
       // 새로운 데이터를 allExpenseItems에 추가
-      allExpenseItems.add(ExpenseItem(
+      _allExpenseItems.add(ExpenseItem(
         amount: expenseData.amount,
         category: expenseData.category!,
         icon: userInfos[_userId]!.iconPath,
@@ -404,42 +447,60 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void updateFilterDataList(int index, bool isWeeklyView) {
-    DateInfo dateInfo = calculateDateInfoBasedOnIndex(index, isWeeklyView);
-    var list = filterExpensesByDateInfo(allExpenseItems, dateInfo);
+  // void updateFilterDataList(int index, bool isWeeklyView) {
+  //   DateInfo dateInfo = calculateDateInfoBasedOnIndex(index, isWeeklyView);
+  //   var list = filterExpensesByDateInfo(_allExpenseItems, dateInfo);
 
-    setState(() {
-      _currentFilteredItems = list;
-      _expenses = list.fold(0.0, (total, item) => total + item.amount);
-      _balance = _budget - _expenses;
+  //   setState(() {
+  //     _currentPageExpenseItems = list;
+  //     _expenses = list.fold(0.0, (total, item) => total + item.amount);
+  //     _balance = _budget - _expenses;
 
-      Set<String> uniqueCategories = list.map((item) => item.category).toSet();
-      categoryChecked.clear();
-      for (String category in uniqueCategories) {
-        categoryChecked[category] = false;
-      }
+  //     Set<String> uniqueCategories = list.map((item) => item.category).toSet();
+  //     categoryChecked.clear();
+  //     for (String category in uniqueCategories) {
+  //       categoryChecked[category] = false;
+  //     }
 
-      Set<String> uniqueUsers = list.map((item) => item.userId).toSet();
-      userChecked.clear();
-      for (String userId in uniqueUsers) {
-        userChecked[userId] = false;
-      }
-    });
-  }
+  //     Set<String> uniqueUsers = list.map((item) => item.userId).toSet();
+  //     userChecked.clear();
+  //     for (String userId in uniqueUsers) {
+  //       userChecked[userId] = false;
+  //     }
+  //   });
+  // }
 
   // 새로운 메서드를 정의합니다.
   void _updateFinancialData() {
-    setState(() {
-      String input = _budgetController.text.replaceAll(',', ''); // 쉼표 제거
-      _budget = double.tryParse(input) ?? _budget;
-      _expenses = _currentFilteredItems.fold(0.0, (total, item) => total + item.amount);
-      _balance = _budget - _expenses;
-    });
+    String input = _budgetController.text.replaceAll(',', ''); // 쉼표 제거
+
+    bool isWeeklyView = Provider.of<ViewModeProvider>(context).isWeeklyView;
+
+    var provSumry = Provider.of<SummaryDataProvider>(context, listen: false);
+
+    num budget = 0.0;
+    if (isWeeklyView) {
+      budget = num.tryParse(input) ?? provSumry.budget_weekly;
+      provSumry.setBudgetWeekly(budget);
+    } else {
+      budget = num.tryParse(input) ?? provSumry.budget_montly;
+      provSumry.setBudgetMontly(budget);
+    }
+
+    provSumry.setExpenses(_currentPageExpenseItems, isWeeklyView);
   }
 
   @override
   Widget build(BuildContext context) {
     bool isWeeklyView = Provider.of<ViewModeProvider>(context).isWeeklyView;
+    if (_isWeeklyView != isWeeklyView) {
+      setState(() {
+        _isWeeklyView = isWeeklyView;
+      });
+      if (_pageController.positions.isNotEmpty) {
+        _pageController.jumpToPage(_initialPageCount);
+      }
+    }
 
     // 다크 테마 색상 정의
     Color backgroundColor = const Color(0xFF121212); // 배경 색상
@@ -448,20 +509,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
     weekNumber = weekOfMonthForStandard(_selectedDate);
 
-    _filterDataByPeriod(isWeeklyView);
+    //_filterDataByPeriod(isWeeklyView);
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(widget.title),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(isWeeklyView ? Icons.calendar_view_month : Icons.calendar_view_week),
-            onPressed: () {
-              toggleViewMode(isWeeklyView);
-            },
-            tooltip: '주간/월간 보기 전환',
-          ),
           IconButton(
             icon: Icon(Icons.settings),
             onPressed: () {
@@ -476,9 +530,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: Column(children: <Widget>[
-        Consumer<ViewModeProvider>(builder: (context, viewModeProvider, child) {
-          return _infoBox(viewModeProvider.isWeeklyView);
-        }),
+        _infoBox(isWeeklyView),
         Padding(
           padding: const EdgeInsets.only(left: 16, right: 10),
           child: Row(
@@ -492,11 +544,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               Builder(
-                // Builder를 추가합니다.
                 builder: (BuildContext context) {
                   return IconButton(
                     icon: Icon(Icons.filter_list),
-                    // IconButton의 onPressed 이벤트
                     onPressed: () {
                       Scaffold.of(context).openEndDrawer(); // Drawer 열기
                     },
@@ -510,23 +560,14 @@ class _MyHomePageState extends State<MyHomePage> {
         Consumer<ViewModeProvider>(builder: (context, viewModeProvider, child) {
           return Expanded(
               child: PageView.builder(
-            controller: pageController,
+            controller: _pageController,
             onPageChanged: (index) {
-              _updateDataForPage(index);
-              //updateSelectedDate(index, isWeeklyView);
-              //updateFilterDataList(index, isWeeklyView);
-              // 중복되는거같다.
+              updateSelectedDate(index, viewModeProvider.isWeeklyView);
             },
-            itemBuilder: (context, index) {
-              toggleViewMode(viewModeProvider.isWeeklyView);
-              DateInfo dateInfo = calculateDateInfoBasedOnIndex(index, viewModeProvider.isWeeklyView);
-              //_filteredItems = filterExpensesByDateInfo(allExpenseItems, dateInfo);
-              // 중복되는거같다.
+            itemBuilder: (_, index) {
+              var list = getExpensesByPageIndex(_allExpenseItems, viewModeProvider.isWeeklyView, index);
 
-              return ExpensePage(
-                  expenseItems: filterExpensesByDateInfo(allExpenseItems, dateInfo),
-                  onToggleDatePicker: toggleDatePicker,
-                  isDatePickerShown: isDatePickerShown);
+              return ExpensePage(expenseItems: list, onToggleDatePicker: toggleDatePicker, isDatePickerShown: isDatePickerShown);
             },
           ));
         })
@@ -663,12 +704,33 @@ class _MyHomePageState extends State<MyHomePage> {
     return dateList;
   }
 
-  // void updateSelectedDate(int index, bool isWeeklyView) {
-  //   DateInfo dateInfo = calculateDateInfoBasedOnIndex(index, isWeeklyView);
-  //   setState(() {
-  //     _selectedDate = DateTime(dateInfo.year, dateInfo.month, dateInfo.baseDay);
-  //   });
-  // }
+  void updateSelectedDate(int index, bool isWeeklyView) {
+    DateTime nowDate = DateTime.now();
+    var subtract = _initialPageCount - index; // 1000 - 0 = 1000
+
+    DateTime monday = nowDate.subtract(Duration(days: nowDate.weekday - 1)); // 월
+    DateTime sunday = nowDate.subtract(Duration(days: nowDate.weekday - 7)); // 일
+
+    DateTime startDate;
+    DateTime endDate;
+
+    if (isWeeklyView) {
+      // index 1 차이가 1주
+      startDate = monday.subtract(Duration(days: subtract * 7)); // 월
+      endDate = sunday.subtract(Duration(days: subtract * 7)); // 일
+    } else {
+      // index 1 차이가 1달
+      startDate = DateTime(nowDate.year, nowDate.month - subtract, 1);
+      endDate = DateTime(nowDate.year, nowDate.month - subtract + 1, 0);
+    }
+
+    var list = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, index);
+    Provider.of<SummaryDataProvider>(context, listen: false).setExpenses(list, isWeeklyView);
+
+    setState(() {
+      _selectedDate = startDate;
+    });
+  }
 
   DateInfo calculateDateInfoBasedOnIndex(int index, bool isWeeklyView) {
     DateTime baseDate = DateTime(1900, 1, 1);
@@ -777,9 +839,20 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _infoBox(bool isWeeklyView) {
-    final String formattedBudget = NumberFormat("#,###").format(_budget);
-    final String formattedExpenses = NumberFormat("#,###").format(_expenses);
-    final String formattedBalance = NumberFormat("#,###").format(_balance.abs());
+    var prov = Provider.of<SummaryDataProvider>(context);
+
+    num expenses = prov.expenses;
+    num balance = prov.balance;
+    num budget = 0.0;
+    if (isWeeklyView) {
+      budget = prov.budget_weekly;
+    } else {
+      budget = prov.budget_montly;
+    }
+
+    String formattedBudget = NumberFormat("#,###").format(budget);
+    String formattedExpenses = NumberFormat("#,###").format(expenses);
+    String formattedBalance = NumberFormat("#,###").format(balance.abs());
     String formattedYear = DateFormat('yyyy').format(_selectedDate);
     String formattedMonth = DateFormat('M').format(_selectedDate);
 
@@ -866,7 +939,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 GestureDetector(
                   onTap: () {
                     // 슬라이드 업 팝업을 여는 로직
-                    _showEditBudgetPopup(_isWeeklyView);
+                    _showEditBudgetPopup(isWeeklyView);
                   },
                   child: Row(
                     mainAxisSize: MainAxisSize.min, // 텍스트 크기에 맞게 Row 크기 조정
@@ -902,7 +975,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                 ),
                 const SizedBox(height: 15),
-                if (_expenses > 0.0)
+                if (expenses > 0.0)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
@@ -917,15 +990,15 @@ class _MyHomePageState extends State<MyHomePage> {
                   text: TextSpan(
                     children: <TextSpan>[
                       TextSpan(
-                        text: _balance > 0 ? '$formattedBalance원' : '$formattedBalance원',
+                        text: balance > 0 ? '$formattedBalance원' : '$formattedBalance원',
                         style: TextStyle(
                           fontSize: 24,
-                          color: _balance > 0 ? Colors.green : Colors.red,
+                          color: balance > 0 ? Colors.green : Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       TextSpan(
-                        text: _balance > 0 ? ' 남았습니다.' : ' 초과했습니다.',
+                        text: balance > 0 ? ' 남았습니다.' : ' 초과했습니다.',
                         style: const TextStyle(
                           fontSize: 24,
                           color: Colors.white,
@@ -1144,13 +1217,14 @@ class ExpensePage extends StatefulWidget {
 class _ExpensePageState extends State<ExpensePage> {
   GroupedItemScrollController itemScrollController = GroupedItemScrollController();
 
-  List<ExpenseItem> expenseItems = [];
+  //List<ExpenseItem> expenseItems = [];
 
   // 스크롤 이벤트 리스너에 _onScrollNotification 함수 추가
   @override
   void initState() {
     super.initState();
-    expenseItems = widget.expenseItems;
+
+    //expenseItems = widget.expenseItems;
   }
 
   @override
@@ -1159,7 +1233,7 @@ class _ExpensePageState extends State<ExpensePage> {
     Color foregroundColor = Colors.white; // 텍스트 색상
     Color accentColor = const Color(0xFF1F1F1F); // 입력 필드 배경 색상
     // expenseItems 리스트가 비어있는 경우 처리
-    if (expenseItems.isEmpty) {
+    if (widget.expenseItems.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16.0),
         child: Text(
@@ -1184,7 +1258,7 @@ class _ExpensePageState extends State<ExpensePage> {
           return true;
         },
         child: StickyGroupedListView<ExpenseItem, String>(
-          elements: expenseItems,
+          elements: widget.expenseItems,
           groupBy: (item) => item.date,
           groupComparator: (String value1, String value2) => value2.compareTo(value1),
           itemComparator: (item1, item2) => item1.date.compareTo(item2.date),
