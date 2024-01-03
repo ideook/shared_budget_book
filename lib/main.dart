@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_budget_book/models/expense_data.dart';
 import 'package:shared_budget_book/models/expense_item.dart';
 import 'package:shared_budget_book/models/user_data.dart';
+import 'package:shared_budget_book/provider/shared_user_provider.dart';
 import 'package:shared_budget_book/provider/summary_date_provider.dart';
 import 'package:shared_budget_book/provider/view_mode_provider.dart';
 import 'package:shared_budget_book/screens/settings_screen.dart';
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider(create: (_) => ExpenseData()),
           ChangeNotifierProvider(create: (_) => ViewModeProvider()),
           ChangeNotifierProvider(create: (_) => SummaryDataProvider()),
+          ChangeNotifierProvider(create: (_) => SharedUserProvider()),
         ],
         child: MaterialApp(
           title: '공유예산가계부',
@@ -88,11 +90,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       userInfos = {
-        'user1_UID_123456': UserInfo(uid: 'user1_UID_123456', iconPath: 'assets/images/user1.jpg', name: 'Alice'),
-        'user2_UID_789012': UserInfo(uid: 'user2_UID_789012', iconPath: 'assets/images/user2.png', name: 'Bob'),
-        'user3_UID_345678': UserInfo(uid: 'user3_UID_345678', iconPath: 'assets/images/user3.png', name: 'Charlie'),
+        'user1_UID_123456': UserInfo(uid: 'user1_UID_123456', iconPath: 'assets/images/user1.jpg', name: 'Alice', datetime: DateTime(2022, 1, 20)),
+        'user2_UID_789012': UserInfo(uid: 'user2_UID_789012', iconPath: 'assets/images/user2.png', name: 'Bob', datetime: DateTime(2023, 10, 20)),
+        'user3_UID_345678': UserInfo(uid: 'user3_UID_345678', iconPath: 'assets/images/user3.png', name: 'Charlie', datetime: DateTime(2024, 1, 1)),
       };
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      addUsersToProvider(Provider.of<SharedUserProvider>(context, listen: false));
+    });
+
     _loadInitialData(); // 6개월치 데이터 생성
 
     //_updateDataForPage(_currentPageIndex);
@@ -136,6 +143,12 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _loadInitialData() {
     _allExpenseItems = generateSixMonthsData();
+  }
+
+  void addUsersToProvider(SharedUserProvider provider) {
+    for (var userInfo in userInfos.values) {
+      provider.addSharedUser(userInfo);
+    }
   }
 
   List<ExpenseItem> generateSixMonthsData() {
