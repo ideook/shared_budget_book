@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-class ExpenseData extends ChangeNotifier {
+class ExpenseItemProvider extends ChangeNotifier {
   num amount;
   DateTime selectedDate;
   String? category;
 
-  ExpenseData({
+  ExpenseItemProvider({
     this.amount = 0,
     DateTime? selectedDate,
     this.category,

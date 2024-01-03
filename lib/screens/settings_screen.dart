@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_budget_book/provider/summary_date_provider.dart';
 import 'package:shared_budget_book/provider/view_mode_provider.dart';
@@ -93,12 +94,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Color backgroundColor = const Color(0xFF121212); // 배경 색상
     var prov = Provider.of<SummaryDataProvider>(context, listen: false);
 
     _weeklyBudget = prov.budget_weekly;
     _monthlyBudget = prov.budget_montly;
 
     return Scaffold(
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text('설정'),
       ),
@@ -152,14 +155,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 40),
                   InkWell(
                     onTap: () => _showEditBudgetDialog('주간'),
-                    child: Container(
-                      padding: const EdgeInsets.all(0.0),
-                      child: Text(
-                        '$_weeklyBudget원',
-                        style: const TextStyle(
-                          fontSize: 16.0,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // 텍스트 크기에 맞게 Row 크기 조정
+                      children: <Widget>[
+                        Stack(
+                          children: <Widget>[
+                            Text(
+                              '${NumberFormat("#,###").format(_weeklyBudget)}원',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0, // 텍스트와 밑줄 사이의 간격 조정
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 1.5, // 밑줄의 두께
+                                color: Colors.white, // 밑줄의 색상
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(width: 7),
+                        const Icon(
+                          Icons.edit,
+                          size: 18,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -178,15 +202,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(width: 40),
                   InkWell(
                     onTap: () => _showEditBudgetDialog('월간'),
-                    child: Container(
-                      padding: const EdgeInsets.all(0.0),
-                      child: Text('$_monthlyBudget원', style: const TextStyle(fontSize: 16.0)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min, // 텍스트 크기에 맞게 Row 크기 조정
+                      children: <Widget>[
+                        Stack(
+                          children: <Widget>[
+                            Text(
+                              '${NumberFormat("#,###").format(_monthlyBudget)}원',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0, // 텍스트와 밑줄 사이의 간격 조정
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 1.5, // 밑줄의 두께
+                                color: Colors.white, // 밑줄의 색상
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 7),
+                        const Icon(
+                          Icons.edit,
+                          size: 18,
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
             InkWell(
               onTap: () {
                 Navigator.push(
@@ -201,7 +251,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     '가계부 공유',
                     style: TextStyle(fontSize: 20.0),
                   ),
-                  Icon(Icons.arrow_forward_ios),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 20,
+                  ),
                 ],
               ),
             ),

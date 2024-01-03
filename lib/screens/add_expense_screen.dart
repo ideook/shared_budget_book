@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_budget_book/models/expense_data.dart';
+import 'package:shared_budget_book/provider/expense_item_provider.dart';
 import 'package:shared_budget_book/services/money_input_formatter.dart';
 import 'package:shared_budget_book/screens/select_category_screen.dart';
 
@@ -87,7 +87,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       }
     }
 
-    Provider.of<ExpenseData>(context, listen: false).updateData(
+    Provider.of<ExpenseItemProvider>(context, listen: false).updateData(
       newAmount: amount,
       newSelectedDate: selectedDate, // 선택한 날짜
     );

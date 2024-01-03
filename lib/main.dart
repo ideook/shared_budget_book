@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_budget_book/models/expense_data.dart';
+import 'package:shared_budget_book/provider/expense_item_provider.dart';
 import 'package:shared_budget_book/models/expense_item.dart';
 import 'package:shared_budget_book/models/user_data.dart';
 import 'package:shared_budget_book/provider/shared_user_provider.dart';
@@ -33,16 +33,19 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => ExpenseData()),
+          ChangeNotifierProvider(create: (_) => ExpenseItemProvider()),
           ChangeNotifierProvider(create: (_) => ViewModeProvider()),
           ChangeNotifierProvider(create: (_) => SummaryDataProvider()),
           ChangeNotifierProvider(create: (_) => SharedUserProvider()),
         ],
         child: MaterialApp(
-          title: '공유예산가계부',
+          title: 'Share Budget Book',
           theme: ThemeData(
             brightness: Brightness.dark,
-            primaryColor: Colors.blueGrey[900],
+            //primaryColor: Colors.blueGrey[900], // AppBar의 기본 색상 설정
+            appBarTheme: AppBarTheme(
+              color: Color(0xFF121212), // 원하는 AppBar 색상으로 변경하세요.
+            ),
           ),
           home: const MyHomePage(),
         ));
@@ -52,7 +55,7 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
 
-  final String title = "공유예산가계부";
+  final String title = "Share Budget Book";
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -70,8 +73,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   DateTime? currentVisibleSectionDate;
 
-  final TextEditingController _budgetController = TextEditingController();
-  final FocusNode _budgetFocusNode = FocusNode();
+  TextEditingController _budgetController = TextEditingController();
+  FocusNode _budgetFocusNode = FocusNode();
 
   bool isDatePickerShown = false;
 
@@ -111,15 +114,33 @@ class _MyHomePageState extends State<MyHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       var list = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, _initialPageCount);
       Provider.of<SummaryDataProvider>(context, listen: false).setExpenses(list, _isWeeklyView);
+
+      setState(() {
+        Set<String> uniqueCategories = list.map((item) => item.category).toSet();
+        categoryChecked.clear();
+        for (String category in uniqueCategories) {
+          categoryChecked[category] = false;
+        }
+
+        Set<String> uniqueUsers = list.map((item) => item.userId).toSet();
+        userChecked.clear();
+        for (String userId in uniqueUsers) {
+          userChecked[userId] = false;
+        }
+      });
+
+      print("addPostFrameCallback");
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => checkAndShowExpenseData());
 
     _pageController = PageController(initialPage: _initialPageCount); // 1000 = 약19년/주 또는 약83.3년/월, 이번주/달
-    _pageController.addListener(() {
-      var pageIndex = _pageController.page?.round();
-      _currentPageExpenseItems = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, pageIndex!);
-    });
+    // _pageController.addListener(() {
+    //   //var pageIndex = _pageController.page?.round();
+    //   //_currentPageExpenseItems = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, pageIndex!);
+
+    //   print("addListener");
+    // });
 
     // 999-> 저번주/달
     // 1001-> 다음주/달
@@ -361,7 +382,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void checkAndShowExpenseData() {
-    final expenseData = Provider.of<ExpenseData>(context, listen: false);
+    final expenseData = Provider.of<ExpenseItemProvider>(context, listen: false);
 
     // ExpenseData에 유효한 데이터가 있는 경우에만 SnackBar를 표시
     if (expenseData.amount != 0 || expenseData.category != null) {
@@ -542,49 +563,62 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Column(children: <Widget>[
-        _infoBox(isWeeklyView),
-        Padding(
-          padding: const EdgeInsets.only(left: 16, right: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                '지출 목록',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  fontWeight: FontWeight.bold,
+      body: Column(
+        children: <Widget>[
+          _infoBox(isWeeklyView),
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '지출 목록',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              Builder(
-                builder: (BuildContext context) {
-                  return IconButton(
-                    icon: Icon(Icons.filter_list),
-                    onPressed: () {
-                      Scaffold.of(context).openEndDrawer(); // Drawer 열기
-                    },
-                    tooltip: '필터링',
-                  );
-                },
-              ),
-            ],
+                Builder(
+                  builder: (BuildContext context) {
+                    return IconButton(
+                      icon: Icon(Icons.filter_list),
+                      onPressed: () {
+                        Scaffold.of(context).openEndDrawer(); // Drawer 열기
+                      },
+                      tooltip: '필터링',
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        Consumer<ViewModeProvider>(builder: (context, viewModeProvider, child) {
-          return Expanded(
-              child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) {
-              updateSelectedDate(index, viewModeProvider.isWeeklyView);
-            },
-            itemBuilder: (_, index) {
-              var list = getExpensesByPageIndex(_allExpenseItems, viewModeProvider.isWeeklyView, index);
+          Consumer<ViewModeProvider>(
+            builder: (context, viewModeProvider, child) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 80), // 하단에 padding 추가
+                  child: PageView.builder(
+                    controller: _pageController,
+                    onPageChanged: (index) {
+                      print("onPageChanged");
+                      updateSelectedDate(index, viewModeProvider.isWeeklyView);
+                      //var pageIndex = _pageController.page?.round();
+                      //_currentPageExpenseItems = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, pageIndex!);
+                    },
+                    itemBuilder: (_, index) {
+                      print("itemBuilder");
+                      var list = getExpensesByPageIndex(_allExpenseItems, viewModeProvider.isWeeklyView, index);
 
-              return ExpensePage(expenseItems: list, onToggleDatePicker: toggleDatePicker, isDatePickerShown: isDatePickerShown);
+                      return ExpensePage(expenseItems: list, onToggleDatePicker: toggleDatePicker, isDatePickerShown: isDatePickerShown);
+                    },
+                  ),
+                ),
+              );
             },
-          ));
-        })
-      ]),
+          )
+        ],
+      ),
+      //floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF3182F7),
         onPressed: () {
@@ -740,6 +774,23 @@ class _MyHomePageState extends State<MyHomePage> {
     var list = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, index);
     Provider.of<SummaryDataProvider>(context, listen: false).setExpenses(list, isWeeklyView);
 
+    print("updateSelectedDate");
+    _currentPageExpenseItems = list;
+
+    setState(() {
+      Set<String> uniqueCategories = list.map((item) => item.category).toSet();
+      categoryChecked.clear();
+      for (String category in uniqueCategories) {
+        categoryChecked[category] = false;
+      }
+
+      Set<String> uniqueUsers = list.map((item) => item.userId).toSet();
+      userChecked.clear();
+      for (String userId in uniqueUsers) {
+        userChecked[userId] = false;
+      }
+    });
+
     setState(() {
       _selectedDate = startDate;
     });
@@ -852,29 +903,32 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _infoBox(bool isWeeklyView) {
+    String formattedYear = DateFormat('yyyy').format(_selectedDate);
+    String formattedMonth = DateFormat('M').format(_selectedDate);
+    String formattedYearMonth = DateFormat('yyyy-MM').format(_selectedDate);
+    String formattedWeeknum = _selectedDate.weekOfYear.toString().padLeft(2, '0');
+
     var prov = Provider.of<SummaryDataProvider>(context);
 
     num expenses = prov.expenses;
     num balance = prov.balance;
     num budget = 0.0;
     if (isWeeklyView) {
-      budget = prov.budget_weekly;
+      budget = prov.getSpecificWeeklyBudget('$formattedYear-$formattedWeeknum');
     } else {
-      budget = prov.budget_montly;
+      budget = prov.getSpecificMonthlyBudget(formattedYearMonth);
     }
 
     String formattedBudget = NumberFormat("#,###").format(budget);
     String formattedExpenses = NumberFormat("#,###").format(expenses);
     String formattedBalance = NumberFormat("#,###").format(balance.abs());
-    String formattedYear = DateFormat('yyyy').format(_selectedDate);
-    String formattedMonth = DateFormat('M').format(_selectedDate);
 
     //setState(() {
-    weekNumber = weekOfMonthForStandard(_selectedDate);
+    //weekNumber = weekOfMonthForStandard(_selectedDate);
     //});
 
     // 주간 또는 월간 레이블 표시
-    String dateLabel = isWeeklyView ? '$formattedYear년 $formattedMonth월  $weekNumber주차' : '$formattedYear년 $formattedMonth월';
+    String dateLabel = isWeeklyView ? '$formattedYear년 $formattedMonth월  ${_selectedDate.weekOfYear}주차' : '$formattedYear년 $formattedMonth월';
 
     return Container(
       padding: const EdgeInsets.only(left: 15, right: 15, top: 20, bottom: 10),
@@ -943,7 +997,7 @@ class _MyHomePageState extends State<MyHomePage> {
             width: double.infinity, // 전체 너비를 차지하도록 설정
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15), // 내부 여백
             decoration: BoxDecoration(
-              color: Colors.grey[850], // 어두운 회색 배경
+              color: Colors.grey[900], // 어두운 회색 배경
               borderRadius: BorderRadius.circular(10), // 모서리 둥글기
             ),
             child: Column(
@@ -1050,8 +1104,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+            const SizedBox(height: 10.0),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 25.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
@@ -1063,14 +1118,14 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPrimary: Colors.white,
                         shape: RoundedRectangleBorder(
                           // 버튼 모서리 둥근 정도 조절
-                          borderRadius: BorderRadius.circular(5.0), // 약간 둥근 모서리
+                          borderRadius: BorderRadius.circular(10.0), // 약간 둥근 모서리
                         ),
                       ),
                       child: Text(isWeeklyView ? '이번주 예산만' : '이번달 예산만', style: TextStyle(fontSize: 16)),
-                      onPressed: () => _editCurrentBudget(),
+                      onPressed: () => _editCurrentBudget(isWeeklyView),
                     ),
                   ),
-                  const SizedBox(width: 16.0),
+                  const SizedBox(width: 20.0),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -1079,7 +1134,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPrimary: Colors.white,
                         shape: RoundedRectangleBorder(
                           // 버튼 모서리 둥근 정도 조절
-                          borderRadius: BorderRadius.circular(5.0), // 약간 둥근 모서리
+                          borderRadius: BorderRadius.circular(10.0), // 약간 둥근 모서리
                         ),
                       ),
                       child: const Text('전체 예산', style: TextStyle(fontSize: 16)),
@@ -1089,14 +1144,30 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               ),
             ),
-            const SizedBox(height: 25.0),
+            const SizedBox(height: 35.0),
           ],
         );
       },
     );
   }
 
-  void _editCurrentBudget() {
+  void _editCurrentBudget(bool isWeeklyView) {
+    var provider = Provider.of<SummaryDataProvider>(context, listen: false);
+
+    String formattedYear = DateFormat('yyyy').format(_selectedDate);
+    String formattedYearMonth = DateFormat('yyyy-MM').format(_selectedDate);
+    String formattedWeeknum = _selectedDate.weekOfYear.toString().padLeft(2, '0');
+
+    // 현재 선택된 주차 또는 월에 따라 예산 값을 가져옵니다.
+    num currentBudget =
+        isWeeklyView ? provider.getSpecificWeeklyBudget('$formattedYear-$formattedWeeknum') : provider.getSpecificMonthlyBudget(formattedYearMonth);
+    // 현재 예산 값을 포맷합니다.
+
+    String formattedBudget = NumberFormat('#,###').format(currentBudget);
+
+    // TextEditingController를 현재 예산 값으로 초기화합니다.
+    _budgetController = TextEditingController(text: formattedBudget);
+
     Navigator.pop(context); // 팝업 닫기
     showDialog(
       context: context,
@@ -1120,7 +1191,17 @@ class _MyHomePageState extends State<MyHomePage> {
             TextButton(
               child: Text('저장'),
               onPressed: () {
-                _updateFinancialData(); // 새로 정의한 메서드 호출
+                String input = _budgetController.text.replaceAll(',', ''); // 쉼표 제거
+                num newBudget = num.tryParse(input) ?? currentBudget;
+                // 현재 선택된 주차 또는 월에 새로운 예산을 적용합니다.
+                if (isWeeklyView) {
+                  // 주차별 예산 업데이트
+                  provider.setSpecificWeeklyBudget('$formattedYear-$formattedWeeknum', newBudget);
+                } else {
+                  // 월별 예산 업데이트
+                  provider.setSpecificMonthlyBudget(formattedYearMonth, newBudget);
+                }
+
                 Navigator.pop(context); // 대화상자 닫기
               },
             ),
@@ -1297,7 +1378,7 @@ class _ExpensePageState extends State<ExpensePage> {
     if (item.isHaveToAdd) {
       // 가상 데이터에 대한 스타일
       return Padding(
-        padding: const EdgeInsets.only(left: 15, right: 15, top: 5, bottom: 20),
+        padding: const EdgeInsets.only(left: 25, right: 25, top: 5, bottom: 20),
         child: InkWell(
           onTap: () {
             Navigator.push(
@@ -1319,7 +1400,7 @@ class _ExpensePageState extends State<ExpensePage> {
       );
     } else {
       return Padding(
-        padding: const EdgeInsets.only(left: 15, right: 15, top: 5, bottom: 20),
+        padding: const EdgeInsets.only(left: 25, right: 25, top: 5, bottom: 20),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

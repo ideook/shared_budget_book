@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_budget_book/main.dart';
-import 'package:shared_budget_book/models/expense_data.dart';
+import 'package:shared_budget_book/provider/expense_item_provider.dart';
 import 'package:shared_budget_book/models/category_data.dart';
 
 import 'package:shared_budget_book/services/money_input_formatter.dart';
@@ -152,7 +152,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
   }
 
   void _selectCategory(String category) {
-    Provider.of<ExpenseData>(context, listen: false).updateData(newCategory: category);
+    Provider.of<ExpenseItemProvider>(context, listen: false).updateData(newCategory: category);
 
     // 메인 화면으로 직접 이동하기
     Navigator.pushAndRemoveUntil(
