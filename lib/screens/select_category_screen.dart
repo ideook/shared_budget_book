@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_budget_book/main.dart';
 import 'package:shared_budget_book/provider/expense_item_provider.dart';
 import 'package:shared_budget_book/models/category_data.dart';
+import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
 
 import 'package:shared_budget_book/services/money_input_formatter.dart';
 
@@ -155,10 +156,21 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     Provider.of<ExpenseItemProvider>(context, listen: false).updateData(newCategory: category);
 
     // 메인 화면으로 직접 이동하기
+    FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const MyHomePage()), // 메인 화면 위젯
-      (Route<dynamic> route) => false, // 모든 이전 라우트 제거
+      MaterialPageRoute(
+          builder: (context) => MyHomePage(
+                analytics: analyticsManager.analytics,
+                observer: analyticsManager.observer,
+              )),
+      (Route<dynamic> route) => false,
     );
+
+    // Navigator.pushAndRemoveUntil(
+    //   context,
+    //   MaterialPageRoute(builder: (context) => const MyHomePage()), // 메인 화면 위젯
+    //   (Route<dynamic> route) => false, // 모든 이전 라우트 제거
+    // );
   }
 }

@@ -1,7 +1,13 @@
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'dart:async';
+
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
+import 'firebase_options.dart';
+
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_budget_book/provider/expense_item_provider.dart';
@@ -14,10 +20,9 @@ import 'package:shared_budget_book/screens/settings_screen.dart';
 import 'package:shared_budget_book/services/money_input_formatter.dart';
 import 'package:sticky_grouped_list/sticky_grouped_list.dart';
 import 'package:week_of_year/date_week_extensions.dart';
-import 'firebase_options.dart';
 import 'package:shared_budget_book/screens/add_expense_screen.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -31,6 +36,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
+
     return MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => ExpenseItemProvider()),
@@ -47,15 +54,25 @@ class MyApp extends StatelessWidget {
               color: Color(0xFF121212), // 원하는 AppBar 색상으로 변경하세요.
             ),
           ),
-          home: const MyHomePage(),
+          navigatorObservers: <NavigatorObserver>[analyticsManager.observer],
+          home: MyHomePage(
+            analytics: analyticsManager.analytics,
+            observer: analyticsManager.observer,
+          ),
         ));
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  const MyHomePage({
+    super.key,
+    required this.analytics,
+    required this.observer,
+  });
 
-  final String title = "Share Budget Book";
+  final String title = 'Share Budget Book';
+  final FirebaseAnalytics analytics;
+  final FirebaseAnalyticsObserver observer;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();

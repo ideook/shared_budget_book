@@ -42,6 +42,12 @@ dependencies:
   sticky_grouped_list: ^3.1.0
   week_of_year: ^2.2.0
   share_plus: ^7.2.1
+  firebase_auth: ^4.15.3
+  firebase_analytics: ^10.7.4
+  cloud_firestore: ^4.13.6
+  google_sign_in: ^6.2.1
+  flutter_facebook_auth: ^6.0.3
+  sign_in_with_apple: ^5.0.0
 
 dev_dependencies:
   flutter_test:
