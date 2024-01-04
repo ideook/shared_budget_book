@@ -3,7 +3,9 @@ import 'dart:math';
 import 'dart:async';
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_budget_book/screens/login_screen.dart';
 import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
 import 'firebase_options.dart';
 
@@ -13,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_budget_book/provider/expense_item_provider.dart';
 import 'package:shared_budget_book/models/expense_item.dart';
 import 'package:shared_budget_book/models/user_data.dart';
+import 'package:shared_budget_book/models/user_model.dart';
 import 'package:shared_budget_book/provider/shared_user_provider.dart';
 import 'package:shared_budget_book/provider/summary_date_provider.dart';
 import 'package:shared_budget_book/provider/view_mode_provider.dart';
@@ -37,6 +40,19 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
+    Widget homeScreen;
+
+    // FirebaseAuth.instance.currentUser?.reload();
+    // if (FirebaseAuth.instance.currentUser != null) {
+    //   // 사용자가 이미 로그인한 경우
+    //   homeScreen = MyHomePage(
+    //     analytics: analyticsManager.analytics,
+    //     observer: analyticsManager.observer,
+    //   );
+    // } else {
+    // 사용자가 로그인하지 않은 경우
+    homeScreen = LoginScreen(); // 로그인 화면으로 이동
+    //}
 
     return MultiProvider(
         providers: [
@@ -55,10 +71,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
           navigatorObservers: <NavigatorObserver>[analyticsManager.observer],
-          home: MyHomePage(
-            analytics: analyticsManager.analytics,
-            observer: analyticsManager.observer,
-          ),
+          home: homeScreen,
         ));
   }
 }
@@ -98,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = false;
   int weekNumber = 1;
 
-  Map<String, UserInfo> userInfos = {};
+  Map<String, UserData> userInfos = {};
   List<Map<String, dynamic>> dataList = [];
   Map<String, bool> categoryChecked = {};
   Map<String, bool> userChecked = {};
@@ -110,9 +123,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
     setState(() {
       userInfos = {
-        'user1_UID_123456': UserInfo(uid: 'user1_UID_123456', iconPath: 'assets/images/user1.jpg', name: 'Alice', datetime: DateTime(2022, 1, 20)),
-        'user2_UID_789012': UserInfo(uid: 'user2_UID_789012', iconPath: 'assets/images/user2.png', name: 'Bob', datetime: DateTime(2023, 10, 20)),
-        'user3_UID_345678': UserInfo(uid: 'user3_UID_345678', iconPath: 'assets/images/user3.png', name: 'Charlie', datetime: DateTime(2024, 1, 1)),
+        'user1_UID_123456': UserData(uid: 'user1_UID_123456', iconPath: 'assets/images/user1.jpg', name: 'Alice', datetime: DateTime(2022, 1, 20)),
+        'user2_UID_789012': UserData(uid: 'user2_UID_789012', iconPath: 'assets/images/user2.png', name: 'Bob', datetime: DateTime(2023, 10, 20)),
+        'user3_UID_345678': UserData(uid: 'user3_UID_345678', iconPath: 'assets/images/user3.png', name: 'Charlie', datetime: DateTime(2024, 1, 1)),
       };
     });
 
@@ -719,7 +732,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     itemBuilder: (context, index) {
                       if (index >= userChecked.length) return Container();
                       String userId = userChecked.keys.elementAt(index);
-                      UserInfo userInfo = userInfos[userId]!; // UID에 해당하는 UserInfo 객체를 얻습니다.
+                      UserData userInfo = userInfos[userId]!; // UID에 해당하는 UserInfo 객체를 얻습니다.
                       return CheckboxListTile(
                         title: Text(userInfo.name), // UserInfo의 name을 표시합니다.
                         value: userChecked[userId],

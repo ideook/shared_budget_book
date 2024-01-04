@@ -20,12 +20,12 @@ class _ShareScreenState extends State<ShareScreen> {
     super.initState();
   }
 
-  void _deleteUser(UserInfo user) {
+  void _deleteUser(UserData user) {
     // 사용자 삭제 로직
     Provider.of<SharedUserProvider>(context, listen: false).removeUser(user);
   }
 
-  void _confirmDelete(UserInfo user) {
+  void _confirmDelete(UserData user) {
     showDialog(
       context: context,
       builder: (BuildContext context) {

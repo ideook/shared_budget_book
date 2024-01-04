@@ -5,36 +5,51 @@ import 'package:shared_budget_book/main.dart';
 import 'package:shared_budget_book/screens/consent_verification_screen.dart';
 import 'package:shared_budget_book/services/auth_service.dart';
 import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
+import 'package:shared_budget_book/services/navigate_service.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // 아이콘 사용을 위해 필요
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({
+    super.key,
+  });
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
+  final NavigateService navigateService = NavigateService();
 
-  void _handleLogin(BuildContext context) async {
+  void handleLoginGoogle() async {
     var userCredential = await _authService.signInWithGoogle();
 
     if (userCredential != null && userCredential.user != null) {
       // 로그인 성공: 추가 정보 입력이 필요한지 확인
       bool isAdditionalInfoRequired = await _checkAdditionalInfoRequired(userCredential.user!.uid);
-      if (isAdditionalInfoRequired) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ConsentAndVerificationScreen()));
-      } else {
-        // 메인 화면으로 직접 이동하기
-        FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-              builder: (context) => MyHomePage(
-                    analytics: analyticsManager.analytics,
-                    observer: analyticsManager.observer,
-                  )),
-          (Route<dynamic> route) => false,
-        );
-      }
+
+      navigateAfterLogin(isAdditionalInfoRequired);
     } else {
       // 로그인 실패: 오류 메시지 표시 등의 처리
+    }
+  }
+
+  void navigateAfterLogin(bool isAdditionalInfoRequired) {
+    if (isAdditionalInfoRequired) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ConsentAndVerificationScreen()));
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+            builder: (context) => MyHomePage(
+                  analytics: analyticsManager.analytics,
+                  observer: analyticsManager.observer,
+                )),
+        (Route<dynamic> route) => false,
+      );
     }
   }
 
@@ -66,26 +81,73 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text('Welcome to the App', style: TextStyle(fontSize: 24.0)),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _authService.signInWithGoogle(),
-              child: Text('Sign in with Google'),
+      backgroundColor: Colors.grey[200], // 배경색 변경
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // 위젯을 화면 상단과 하단으로 분배
+        children: <Widget>[
+          // 로고가 있는 부분
+          const Expanded(
+            child: Center(
+              child: FlutterLogo(size: 100), // 로고, 실제 앱 로고로 교체 필요
             ),
-            ElevatedButton(
-              onPressed: () => _authService.signInWithFacebook(),
-              child: Text('Sign in with Facebook'),
-            ),
-            ElevatedButton(
-              onPressed: () => _authService.signInWithApple(),
-              child: Text('Sign in with Apple'),
-            ),
-          ],
+          ),
+          // 로그인 버튼들이 있는 부분
+          Column(
+            children: <Widget>[
+              // Google 로그인 버튼
+              _buildLoginButton(
+                iconData: FontAwesomeIcons.google,
+                text: 'Sign in with Google',
+                color: Color(0xFFDB4437), // 구글 버튼 색상
+                onPressed: () => handleLoginGoogle(),
+              ),
+              SizedBox(height: 16), // 버튼 사이의 간격
+              // Facebook 로그인 버튼
+              _buildLoginButton(
+                  iconData: FontAwesomeIcons.facebook,
+                  text: 'Sign in with Facebook',
+                  color: Color(0xFF1877F2), // Facebook 버튼 색상
+                  onPressed: () {}),
+              SizedBox(height: 16),
+              // Apple 로그인 버튼
+              _buildLoginButton(
+                  iconData: FontAwesomeIcons.apple,
+                  text: 'Sign in with Apple',
+                  color: Colors.black, // Apple 버튼 색상
+                  onPressed: () {}),
+              SizedBox(height: 32), // 하단 여백
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginButton({
+    required IconData iconData,
+    required String text,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return ElevatedButton.icon(
+      icon: Padding(
+        padding: const EdgeInsets.only(right: 8.0), // 아이콘과 텍스트 사이 간격
+        child: FaIcon(iconData, color: Colors.white),
+      ),
+      label: Text(
+        text,
+        style: TextStyle(fontSize: 16, color: Colors.white),
+      ),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        alignment: Alignment.centerLeft,
+        primary: color,
+        minimumSize: Size(250, 50), // 버튼 크기 조정
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // 버튼 모서리 둥글기
         ),
+        side: BorderSide(color: Colors.grey.shade300), // 테두리 색상
+        padding: EdgeInsets.fromLTRB(24, 0, 0, 0), // 왼쪽에 아이콘 띄우기
       ),
     );
   }

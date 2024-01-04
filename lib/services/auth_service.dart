@@ -14,17 +14,7 @@ class AuthService {
   final FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
 
   // Google 로그인
-  Future<UserCredential> signInWithGoogle() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
-    final AuthCredential credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth?.accessToken,
-      idToken: googleAuth?.idToken,
-    );
-    return await _firebaseAuth.signInWithCredential(credential);
-  }
-
-  Future<void> signInWithGoogle2(BuildContext context) async {
+  Future<UserCredential?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       final GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
@@ -32,25 +22,10 @@ class AuthService {
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
       );
-      UserCredential userCredential = await _firebaseAuth.signInWithCredential(credential);
-
-      bool isAdditionalInfoRequired = await _checkAdditionalInfoRequired(userCredential.user!.uid);
-
-      if (isAdditionalInfoRequired) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => ConsentAndVerificationScreen()));
-      } else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-              builder: (context) => MyHomePage(
-                    analytics: analyticsManager.analytics,
-                    observer: analyticsManager.observer,
-                  )),
-          (Route<dynamic> route) => false,
-        );
-      }
+      return await _firebaseAuth.signInWithCredential(credential);
     } catch (e) {
-      print(e); // 로그인 실패 처리
+      print(e);
+      return null;
     }
   }
 
