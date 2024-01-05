@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:shared_budget_book/main.dart';
+import 'package:shared_budget_book/models/user_model.dart';
 import 'package:shared_budget_book/screens/consent_verification_screen.dart';
 import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -78,6 +79,18 @@ class AuthService {
 
   // 로그아웃
   Future<void> signOut() async {
+    await GoogleSignIn().signOut();
     await _firebaseAuth.signOut();
+  }
+
+  UserModel? registerUser() {
+    User? firebaseUser = _firebaseAuth.currentUser;
+    if (firebaseUser != null) {
+      // UserModel 생성
+      UserModel newUser = UserModel.fromFirebaseUser(firebaseUser);
+      return newUser;
+    } else {
+      return null;
+    }
   }
 }

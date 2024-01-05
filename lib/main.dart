@@ -5,8 +5,11 @@ import 'dart:async';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_budget_book/provider/user_model_provider.dart';
 import 'package:shared_budget_book/screens/login_screen.dart';
+import 'package:shared_budget_book/screens/user_screen.dart';
 import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
+import 'package:shared_budget_book/services/firestore_service.dart';
 import 'firebase_options.dart';
 
 import 'package:flutter/material.dart';
@@ -31,6 +34,15 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  if (FirebaseAuth.instance.currentUser != null) {
+    try {
+      // 현재 로그인한 사용자의 상태를 갱신
+      await FirebaseAuth.instance.currentUser!.reload();
+    } catch (e) {
+      // 예외 처리
+    }
+  }
+
   runApp(const MyApp());
 }
 
@@ -42,24 +54,24 @@ class MyApp extends StatelessWidget {
     FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
     Widget homeScreen;
 
-    // FirebaseAuth.instance.currentUser?.reload();
-    // if (FirebaseAuth.instance.currentUser != null) {
-    //   // 사용자가 이미 로그인한 경우
-    //   homeScreen = MyHomePage(
-    //     analytics: analyticsManager.analytics,
-    //     observer: analyticsManager.observer,
-    //   );
-    // } else {
-    // 사용자가 로그인하지 않은 경우
-    homeScreen = LoginScreen(); // 로그인 화면으로 이동
-    //}
+    if (FirebaseAuth.instance.currentUser != null) {
+      // 사용자가 이미 로그인한 경우
+      homeScreen = MyHomePage(
+        analytics: analyticsManager.analytics,
+        observer: analyticsManager.observer,
+      );
+    } else {
+      //사용자가 로그인하지 않은 경우
+      homeScreen = LoginScreen(); // 로그인 화면으로 이동
+    }
 
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => ExpenseItemProvider()),
-          ChangeNotifierProvider(create: (_) => ViewModeProvider()),
-          ChangeNotifierProvider(create: (_) => SummaryDataProvider()),
-          ChangeNotifierProvider(create: (_) => SharedUserProvider()),
+          ChangeNotifierProvider(create: (context) => UserModelProvider()),
+          ChangeNotifierProvider(create: (context) => ExpenseItemProvider()),
+          ChangeNotifierProvider(create: (context) => ViewModeProvider()),
+          ChangeNotifierProvider(create: (context) => SummaryDataProvider()),
+          ChangeNotifierProvider(create: (context) => SharedUserProvider()),
         ],
         child: MaterialApp(
           title: 'Share Budget Book',
@@ -92,6 +104,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final FirestoreService _firestoreService = FirestoreService();
+
   String _userId = 'user1_UID_123456';
   int _initialPageCount = 1000;
   List<ExpenseItem> _allExpenseItems = [];
@@ -120,6 +134,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    _updateUserModel();
 
     setState(() {
       userInfos = {
@@ -190,6 +206,17 @@ class _MyHomePageState extends State<MyHomePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _isWeeklyView = Provider.of<ViewModeProvider>(context).isWeeklyView;
+  }
+
+  void _updateUserModel() async {
+    if (FirebaseAuth.instance.currentUser != null) {
+      UserModel? userModel = await _firestoreService.getUser(FirebaseAuth.instance.currentUser!.uid);
+      if (userModel != null) {
+        if (mounted) {
+          Provider.of<UserModelProvider>(context, listen: false).setUser(userModel);
+        }
+      }
+    }
   }
 
   void _loadInitialData() {
@@ -557,6 +584,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     bool isWeeklyView = Provider.of<ViewModeProvider>(context).isWeeklyView;
+
     if (_isWeeklyView != isWeeklyView) {
       setState(() {
         _isWeeklyView = isWeeklyView;
@@ -581,176 +609,182 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: <Widget>[
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: Icon(Icons.person),
             onPressed: () {
               // 설정 화면으로 이동
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => SettingsScreen()),
+                MaterialPageRoute(builder: (context) => const UserScreen()),
               );
             },
-            tooltip: '설정',
+            tooltip: '사용자',
           ),
         ],
       ),
-      body: Column(
-        children: <Widget>[
-          _infoBox(isWeeklyView),
-          Padding(
-            padding: const EdgeInsets.only(left: 16, right: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '지출 목록',
-                  style: TextStyle(
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Builder(
-                  builder: (BuildContext context) {
-                    return IconButton(
-                      icon: Icon(Icons.filter_list),
-                      onPressed: () {
-                        Scaffold.of(context).openEndDrawer(); // Drawer 열기
-                      },
-                      tooltip: '필터링',
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          Consumer<ViewModeProvider>(
-            builder: (context, viewModeProvider, child) {
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 80), // 하단에 padding 추가
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      print("onPageChanged");
-                      updateSelectedDate(index, viewModeProvider.isWeeklyView);
-                      //var pageIndex = _pageController.page?.round();
-                      //_currentPageExpenseItems = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, pageIndex!);
-                    },
-                    itemBuilder: (_, index) {
-                      print("itemBuilder");
-                      var list = getExpensesByPageIndex(_allExpenseItems, viewModeProvider.isWeeklyView, index);
-
-                      return ExpensePage(expenseItems: list, onToggleDatePicker: toggleDatePicker, isDatePickerShown: isDatePickerShown);
-                    },
-                  ),
-                ),
-              );
-            },
-          )
-        ],
-      ),
-      //floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF3182F7),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddExpenseScreen(selectedDate: _selectedDate),
-            ),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
-      endDrawer: Drawer(
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            AppBar(
-              title: const Text('필터'),
-              automaticallyImplyLeading: false,
-              actions: <Widget>[
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                )
-              ],
-            ),
-            SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const SizedBox(height: 15),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 16, bottom: 10),
-                    child: Text(
-                      '카테고리',
-                      style: TextStyle(
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold,
-                      ),
+            _infoBox(isWeeklyView),
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '지출 목록',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  ListView.builder(
-                    padding: EdgeInsets.all(0),
-                    shrinkWrap: true, // ListView의 크기를 내용물 크기에 맞게 조정
-                    physics: NeverScrollableScrollPhysics(), // ListView 스크롤 비활성화
-                    itemCount: categoryChecked.length,
-                    itemBuilder: (context, index) {
-                      if (index >= categoryChecked.length) return Container();
-                      String category = categoryChecked.keys.elementAt(index);
-                      return CheckboxListTile(
-                        title: Text(category),
-                        value: categoryChecked[category],
-                        onChanged: (bool? value) {
-                          setState(() {
-                            categoryChecked[category] = value!;
-                          });
+                  Builder(
+                    builder: (BuildContext context) {
+                      return IconButton(
+                        icon: Icon(Icons.filter_list),
+                        onPressed: () {
+                          Scaffold.of(context).openEndDrawer(); // Drawer 열기
                         },
-                        visualDensity: const VisualDensity(horizontal: -4.0, vertical: -4.0),
+                        tooltip: '필터링',
                       );
                     },
                   ),
-                  const SizedBox(height: 25),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 16, bottom: 10),
-                    child: Text(
-                      '사용자',
-                      style: TextStyle(
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  ListView.builder(
-                    padding: EdgeInsets.all(0),
-                    shrinkWrap: true, // ListView의 크기를 내용물 크기에 맞게 조정
-                    physics: NeverScrollableScrollPhysics(), // ListView 스크롤 비활성화
-                    itemCount: userChecked.length,
-                    itemBuilder: (context, index) {
-                      if (index >= userChecked.length) return Container();
-                      String userId = userChecked.keys.elementAt(index);
-                      UserData userInfo = userInfos[userId]!; // UID에 해당하는 UserInfo 객체를 얻습니다.
-                      return CheckboxListTile(
-                        title: Text(userInfo.name), // UserInfo의 name을 표시합니다.
-                        value: userChecked[userId],
-                        onChanged: (bool? value) {
-                          setState(() {
-                            userChecked[userId] = value!;
-                          });
-                        },
-                        visualDensity: const VisualDensity(horizontal: -4.0, vertical: -4.0),
-                      );
-                    },
-                  ),
-                  // 사용자에 대한 Padding과 ListView.builder 추가...
-                  // 그 외 필요한 위젯들 추가...
                 ],
               ),
             ),
+            Consumer<ViewModeProvider>(
+              builder: (context, viewModeProvider, child) {
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 80), // 하단에 padding 추가
+                    child: PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        print("onPageChanged");
+                        updateSelectedDate(index, viewModeProvider.isWeeklyView);
+                        //var pageIndex = _pageController.page?.round();
+                        //_currentPageExpenseItems = getExpensesByPageIndex(_allExpenseItems, _isWeeklyView, pageIndex!);
+                      },
+                      itemBuilder: (_, index) {
+                        print("itemBuilder");
+                        var list = getExpensesByPageIndex(_allExpenseItems, viewModeProvider.isWeeklyView, index);
+
+                        return ExpensePage(expenseItems: list, onToggleDatePicker: toggleDatePicker, isDatePickerShown: isDatePickerShown);
+                      },
+                    ),
+                  ),
+                );
+              },
+            )
           ],
+        ),
+      ),
+      //floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      floatingActionButton: SafeArea(
+        child: FloatingActionButton(
+          backgroundColor: const Color(0xFF3182F7),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddExpenseScreen(selectedDate: _selectedDate),
+              ),
+            );
+          },
+          child: const Icon(Icons.add),
+        ),
+      ),
+      endDrawer: SafeArea(
+        child: Drawer(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: <Widget>[
+              AppBar(
+                title: const Text('필터'),
+                automaticallyImplyLeading: false,
+                actions: <Widget>[
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  )
+                ],
+              ),
+              SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    const SizedBox(height: 15),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 16, bottom: 10),
+                      child: Text(
+                        '카테고리',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ListView.builder(
+                      padding: EdgeInsets.all(0),
+                      shrinkWrap: true, // ListView의 크기를 내용물 크기에 맞게 조정
+                      physics: NeverScrollableScrollPhysics(), // ListView 스크롤 비활성화
+                      itemCount: categoryChecked.length,
+                      itemBuilder: (context, index) {
+                        if (index >= categoryChecked.length) return Container();
+                        String category = categoryChecked.keys.elementAt(index);
+                        return CheckboxListTile(
+                          title: Text(category),
+                          value: categoryChecked[category],
+                          onChanged: (bool? value) {
+                            setState(() {
+                              categoryChecked[category] = value!;
+                            });
+                          },
+                          visualDensity: const VisualDensity(horizontal: -4.0, vertical: -4.0),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 25),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 16, bottom: 10),
+                      child: Text(
+                        '사용자',
+                        style: TextStyle(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    ListView.builder(
+                      padding: EdgeInsets.all(0),
+                      shrinkWrap: true, // ListView의 크기를 내용물 크기에 맞게 조정
+                      physics: NeverScrollableScrollPhysics(), // ListView 스크롤 비활성화
+                      itemCount: userChecked.length,
+                      itemBuilder: (context, index) {
+                        if (index >= userChecked.length) return Container();
+                        String userId = userChecked.keys.elementAt(index);
+                        UserData userInfo = userInfos[userId]!; // UID에 해당하는 UserInfo 객체를 얻습니다.
+                        return CheckboxListTile(
+                          title: Text(userInfo.name), // UserInfo의 name을 표시합니다.
+                          value: userChecked[userId],
+                          onChanged: (bool? value) {
+                            setState(() {
+                              userChecked[userId] = value!;
+                            });
+                          },
+                          visualDensity: const VisualDensity(horizontal: -4.0, vertical: -4.0),
+                        );
+                      },
+                    ),
+                    // 사용자에 대한 Padding과 ListView.builder 추가...
+                    // 그 외 필요한 위젯들 추가...
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

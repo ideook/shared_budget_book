@@ -124,85 +124,87 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         backgroundColor: backgroundColor, // 앱바 색상
         iconTheme: IconThemeData(color: foregroundColor), // 앱바 아이콘 색상
       ),
-      body: SingleChildScrollView(
-          child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: GestureDetector(
-                onTap: () {
-                  // 달력이 표시되어 있는 경우, 화면의 다른 곳을 탭하면 달력을 숨깁니다.
-                  if (isDatePickerShown) {
-                    setState(() {
-                      isDatePickerShown = false;
-                    });
-                  }
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _amountFocusNode.unfocus();
-                            isDatePickerShown = !isDatePickerShown; // 달력 표시 상태 토글
-                          });
-                        },
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Text(
-                              DateFormat('yyyy년 M월 d일').format(selectedDate),
-                              style: TextStyle(fontSize: 18.0, color: foregroundColor),
-                            ),
-                            const SizedBox(width: 8), // 텍스트와 아이콘 사이의 간격
-                            const Icon(
-                              Icons.keyboard_arrow_down, // 아래쪽 방향 아이콘
-                              color: Colors.white,
-                            ),
-                          ],
-                        )),
-                    if (isDatePickerShown)
-                      CalendarDatePicker(
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2101),
-                        onDateChanged: (newDate) {
-                          setState(() {
-                            selectedDate = newDate;
-                            isDatePickerShown = false;
-                          });
-                        },
-                      ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _msg,
-                      style: TextStyle(fontSize: 26.0, color: foregroundColor),
-                    ),
-                    const SizedBox(height: 32),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: TextField(
-                        controller: _amountController,
-                        focusNode: _amountFocusNode,
-                        style: TextStyle(color: foregroundColor, fontSize: 24),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '숫자 입력',
-                          hintStyle: TextStyle(color: Colors.white70),
+      body: SafeArea(
+        child: SingleChildScrollView(
+            child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GestureDetector(
+                  onTap: () {
+                    // 달력이 표시되어 있는 경우, 화면의 다른 곳을 탭하면 달력을 숨깁니다.
+                    if (isDatePickerShown) {
+                      setState(() {
+                        isDatePickerShown = false;
+                      });
+                    }
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _amountFocusNode.unfocus();
+                              isDatePickerShown = !isDatePickerShown; // 달력 표시 상태 토글
+                            });
+                          },
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('yyyy년 M월 d일').format(selectedDate),
+                                style: TextStyle(fontSize: 18.0, color: foregroundColor),
+                              ),
+                              const SizedBox(width: 8), // 텍스트와 아이콘 사이의 간격
+                              const Icon(
+                                Icons.keyboard_arrow_down, // 아래쪽 방향 아이콘
+                                color: Colors.white,
+                              ),
+                            ],
+                          )),
+                      if (isDatePickerShown)
+                        CalendarDatePicker(
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2101),
+                          onDateChanged: (newDate) {
+                            setState(() {
+                              selectedDate = newDate;
+                              isDatePickerShown = false;
+                            });
+                          },
                         ),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [
-                          MoneyInputFormatter(),
-                        ],
+                      const SizedBox(height: 10),
+                      Text(
+                        _msg,
+                        style: TextStyle(fontSize: 26.0, color: foregroundColor),
                       ),
-                    ),
-                    // 더 많은 위젯들이 위치할 수 있습니다.
-                  ],
-                ),
-              ))),
+                      const SizedBox(height: 32),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: TextField(
+                          controller: _amountController,
+                          focusNode: _amountFocusNode,
+                          style: TextStyle(color: foregroundColor, fontSize: 24),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: '숫자 입력',
+                            hintStyle: TextStyle(color: Colors.white70),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          inputFormatters: [
+                            MoneyInputFormatter(),
+                          ],
+                        ),
+                      ),
+                      // 더 많은 위젯들이 위치할 수 있습니다.
+                    ],
+                  ),
+                ))),
+      ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: EdgeInsets.only(

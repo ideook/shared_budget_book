@@ -57,34 +57,36 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
         title: Text('카테고리 선택', style: TextStyle(color: foregroundColor)),
         backgroundColor: backgroundColor,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              '$formattedDate,',
-              style: TextStyle(fontSize: 18.0, color: foregroundColor),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              '$formattedAmount원을',
-              style: TextStyle(fontSize: 18, color: foregroundColor),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '어디에 썼나요?',
-              style: TextStyle(fontSize: 26.0, color: foregroundColor),
-            ),
-            const SizedBox(height: 25),
-            Expanded(
-                child: GridView.count(
-                    padding: const EdgeInsets.only(top: 10, bottom: 50),
-                    crossAxisCount: 4,
-                    childAspectRatio: 1.0,
-                    mainAxisSpacing: 20,
-                    children: categories.map((category) => _categoryTile(category, context)).toList())),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                '$formattedDate,',
+                style: TextStyle(fontSize: 18.0, color: foregroundColor),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                '$formattedAmount원을',
+                style: TextStyle(fontSize: 18, color: foregroundColor),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '어디에 썼나요?',
+                style: TextStyle(fontSize: 26.0, color: foregroundColor),
+              ),
+              const SizedBox(height: 25),
+              Expanded(
+                  child: GridView.count(
+                      padding: const EdgeInsets.only(top: 10, bottom: 50),
+                      crossAxisCount: 4,
+                      childAspectRatio: 1.0,
+                      mainAxisSpacing: 20,
+                      children: categories.map((category) => _categoryTile(category, context)).toList())),
+            ],
+          ),
         ),
       ),
     );

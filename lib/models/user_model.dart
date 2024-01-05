@@ -6,7 +6,10 @@ class UserModel {
   String email;
   String profilePicture;
   Map<String, dynamic> settings;
-  String authType; // 인증 유형을 나타내는 필드 추가
+  String authType; // 인증 유형
+  bool emailVerified; // 이메일 인증 여부
+  DateTime createdAt; // 가입일시
+  DateTime lastSignInAt; // 마지막 로그인 일시
 
   UserModel({
     required this.id,
@@ -14,23 +17,24 @@ class UserModel {
     required this.email,
     required this.profilePicture,
     required this.settings,
-    this.authType = 'unknown', // 기본값 설정
-  });
+    this.authType = 'unknown',
+    this.emailVerified = false,
+    DateTime? createdAt,
+    DateTime? lastSignInAt,
+  })  : createdAt = createdAt ?? DateTime.now(),
+        lastSignInAt = lastSignInAt ?? DateTime.now();
 
   factory UserModel.fromFirebaseUser(User user) {
-    // Firebase User에서 제공하는 ProviderData를 사용하여 인증 유형 파악
-    String authType = 'unknown';
-    if (user.providerData.isNotEmpty) {
-      authType = user.providerData[0].providerId; // 예: "google.com", "facebook.com", "apple.com"
-    }
-
     return UserModel(
       id: user.uid,
       name: user.displayName ?? '',
       email: user.email ?? '',
       profilePicture: user.photoURL ?? '',
-      settings: {}, // Firebase 인증에서 제공되지 않는 추가 설정은 여기서 초기화
-      authType: authType,
+      settings: {},
+      authType: user.providerData.isNotEmpty ? user.providerData[0].providerId : 'unknown',
+      emailVerified: user.emailVerified,
+      createdAt: user.metadata.creationTime ?? DateTime.now(),
+      lastSignInAt: DateTime.now(), // 현재 시간으로 마지막 로그인 시간 설정
     );
   }
 
@@ -42,6 +46,9 @@ class UserModel {
       profilePicture: map['profilePicture'] ?? '',
       settings: map['settings'] ?? {},
       authType: map['authType'] ?? 'unknown',
+      emailVerified: map['emailVerified'] as bool? ?? false,
+      createdAt: map['createdAt']?.toDate() ?? DateTime.now(),
+      lastSignInAt: map['lastSignInAt']?.toDate() ?? DateTime.now(),
     );
   }
 
@@ -51,7 +58,10 @@ class UserModel {
       'email': email,
       'profilePicture': profilePicture,
       'settings': settings,
-      'authType': authType, // 인증 유형을 맵에 포함
+      'authType': authType,
+      'emailVerified': emailVerified,
+      'createdAt': createdAt.toIso8601String(),
+      'lastSignInAt': lastSignInAt.toIso8601String(), // ISO 8601 포맷으로 변환
     };
   }
 }

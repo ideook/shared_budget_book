@@ -62,34 +62,36 @@ class _ShareScreenState extends State<ShareScreen> {
       appBar: AppBar(
         title: Text('공유'),
       ),
-      body: Padding(
-        padding: EdgeInsets.only(top: 20.0),
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: sharedUsers.length,
-                itemBuilder: (context, index) {
-                  var user = sharedUsers[index];
-                  String formattedDate = DateFormat('yyyy-MM-dd').format(user.datetime);
-                  return Padding(
-                    padding: EdgeInsets.only(left: 10),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundImage: AssetImage(user.iconPath),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(top: 20.0),
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: sharedUsers.length,
+                  itemBuilder: (context, index) {
+                    var user = sharedUsers[index];
+                    String formattedDate = DateFormat('yyyy-MM-dd').format(user.datetime);
+                    return Padding(
+                      padding: EdgeInsets.only(left: 10),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: AssetImage(user.iconPath),
+                        ),
+                        title: Text(user.name),
+                        subtitle: Text(formattedDate),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _confirmDelete(user), // 삭제 확인 다이얼로그 호출
+                        ),
                       ),
-                      title: Text(user.name),
-                      subtitle: Text(formattedDate),
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _confirmDelete(user), // 삭제 확인 다이얼로그 호출
-                      ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: SafeArea(
