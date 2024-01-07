@@ -1,21 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_budget_book/main.dart';
-import 'package:shared_budget_book/models/user_model.dart';
-import 'package:shared_budget_book/provider/user_model_provider.dart';
-import 'package:shared_budget_book/screens/consent_verification_screen.dart';
-import 'package:shared_budget_book/services/auth_service.dart';
-import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
-import 'package:shared_budget_book/services/firestore_service.dart';
-import 'package:shared_budget_book/services/navigate_service.dart';
+import 'package:earnedon/main.dart';
+import 'package:earnedon/models/user_model.dart';
+import 'package:earnedon/screens/consent_verification_screen.dart';
+import 'package:earnedon/services/auth_service.dart';
+import 'package:earnedon/services/firebase_analytics_manager.dart';
+import 'package:earnedon/services/firestore_service.dart';
+import 'package:earnedon/services/navigate_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // 아이콘 사용을 위해 필요
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({
-    super.key,
-  });
+  const LoginScreen({super.key, this.deepLink});
+
+  final Uri? deepLink;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -28,6 +27,44 @@ class _LoginScreenState extends State<LoginScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
   final NavigateService navigateService = NavigateService();
+
+  @override
+  void initState() {
+    super.initState();
+    _initDynamicLinks();
+  }
+
+  void _initDynamicLinks() {
+    if (widget.deepLink != null) {
+      _handleDeepLink(widget.deepLink!);
+    }
+
+    FirebaseDynamicLinks.instance.onLink.listen(
+      (PendingDynamicLinkData dynamicLinkData) {
+        final Uri? deepLink = dynamicLinkData.link;
+        if (deepLink != null) {
+          _handleDeepLink(deepLink);
+        }
+      },
+    ).onError((error) {
+      // 오류 처리
+    });
+  }
+
+  void _handleDeepLink(Uri deepLink) {
+    // Deep Link를 처리하는 로직
+    FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+          builder: (context) => MyHomePage(
+                analytics: analyticsManager.analytics,
+                observer: analyticsManager.observer,
+              )),
+      (Route<dynamic> route) => false,
+    );
+    //Navigator.of(context).push(MaterialPageRoute(builder: (_) => TargetScreen()));
+  }
 
   void handleLoginGoogle() async {
     var userCredential = await _authService.signInWithGoogle();
@@ -112,24 +149,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 _buildLoginButton(
                   iconData: FontAwesomeIcons.google,
                   text: 'Sign in with Google',
-                  color: Color(0xFFDB4437), // 구글 버튼 색상
+                  color: const Color(0xFFDB4437), // 구글 버튼 색상
                   onPressed: () => handleLoginGoogle(),
                 ),
-                SizedBox(height: 16), // 버튼 사이의 간격
+                const SizedBox(height: 16), // 버튼 사이의 간격
                 // Facebook 로그인 버튼
                 _buildLoginButton(
                     iconData: FontAwesomeIcons.facebook,
                     text: 'Sign in with Facebook',
-                    color: Color(0xFF1877F2), // Facebook 버튼 색상
+                    color: const Color(0xFF1877F2), // Facebook 버튼 색상
                     onPressed: () {}),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 // Apple 로그인 버튼
                 _buildLoginButton(
                     iconData: FontAwesomeIcons.apple,
                     text: 'Sign in with Apple',
                     color: Colors.black, // Apple 버튼 색상
                     onPressed: () {}),
-                SizedBox(height: 32), // 하단 여백
+                const SizedBox(height: 32), // 하단 여백
               ],
             ),
           ],
@@ -151,13 +188,12 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       label: Text(
         text,
-        style: TextStyle(fontSize: 16, color: Colors.white),
+        style: const TextStyle(fontSize: 16, color: Colors.white),
       ),
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        alignment: Alignment.centerLeft,
-        primary: color,
-        minimumSize: Size(250, 50), // 버튼 크기 조정
+        alignment: Alignment.centerLeft, backgroundColor: color,
+        minimumSize: const Size(250, 50), // 버튼 크기 조정
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8), // 버튼 모서리 둥글기
           side: BorderSide(color: Colors.grey[850]!, width: 2), // 흰색 테두리 추가

@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_budget_book/main.dart';
-import 'package:shared_budget_book/provider/expense_item_provider.dart';
-import 'package:shared_budget_book/models/category_data.dart';
-import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
-
-import 'package:shared_budget_book/services/money_input_formatter.dart';
+import 'package:earnedon/main.dart';
+import 'package:earnedon/models/user_model.dart';
+import 'package:earnedon/provider/expense_item_provider.dart';
+import 'package:earnedon/models/category_data.dart';
+import 'package:earnedon/provider/user_model_provider.dart';
+import 'package:earnedon/services/firebase_analytics_manager.dart';
 
 class CategorySelectionScreen extends StatefulWidget {
   final DateTime selectedDate;
@@ -154,8 +153,14 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
     ];
   }
 
-  void _selectCategory(String category) {
-    Provider.of<ExpenseItemProvider>(context, listen: false).updateData(newCategory: category);
+  void _selectCategory(String category) async {
+    UserModel? userModel = Provider.of<UserModelProvider>(context, listen: false).user;
+
+    if (userModel != null) {
+      Provider.of<ExpenseItemProvider>(context, listen: false).updateData(
+        newCategory: category,
+      );
+    }
 
     // 메인 화면으로 직접 이동하기
     FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();

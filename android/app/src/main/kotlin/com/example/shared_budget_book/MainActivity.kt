@@ -1,4 +1,4 @@
-package com.example.shared_budget_book
+package com.example.EarnedOn
 
 import io.flutter.embedding.android.FlutterActivity
 

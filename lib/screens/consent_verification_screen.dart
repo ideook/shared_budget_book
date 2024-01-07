@@ -2,13 +2,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_budget_book/main.dart';
-import 'package:shared_budget_book/models/user_model.dart';
-import 'package:shared_budget_book/provider/user_model_provider.dart';
-import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
+import 'package:earnedon/main.dart';
+import 'package:earnedon/models/user_model.dart';
+import 'package:earnedon/services/firebase_analytics_manager.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:shared_budget_book/services/firestore_service.dart';
+import 'package:earnedon/services/firestore_service.dart';
 
 class ConsentAndVerificationScreen extends StatefulWidget {
   const ConsentAndVerificationScreen({
@@ -60,60 +58,59 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
       builder: (BuildContext context) {
         var size = MediaQuery.of(context).size;
         return Dialog(
-          insetPadding: EdgeInsets.all(15),
+          insetPadding: const EdgeInsets.all(15),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8), // Dialog의 둥근 모서리 설정
           ),
           child: Container(
             width: size.width * 1.0, // Dialog의 너비 설정
             height: size.height * 0.7, // Dialog의 너비 설정
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 15), // Dialog 내부의 여백 설정
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15), // Dialog 내부의 여백 설정
             child: Stack(
               children: [
                 Padding(
-                  padding: EdgeInsets.only(top: 0, right: 0, left: 0, bottom: 0),
+                  padding: const EdgeInsets.only(top: 0, right: 0, left: 0, bottom: 0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
                           title,
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                       ),
                       IconButton(
-                        icon: Icon(Icons.close),
+                        icon: const Icon(Icons.close),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.only(top: 35), // 'X' 버튼과 내용 사이의 간격
+                  padding: const EdgeInsets.only(top: 35), // 'X' 버튼과 내용 사이의 간격
                   child: Scrollbar(
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          SizedBox(height: 30), // 'X' 버튼과 내용 사이의 간격
+                          const SizedBox(height: 30), // 'X' 버튼과 내용 사이의 간격
                           MarkdownBody(
                             data: markdownData,
                             shrinkWrap: true,
                           ),
-                          SizedBox(height: 10), // 'X' 버튼과 내용 사이의 간격
+                          const SizedBox(height: 10), // 'X' 버튼과 내용 사이의 간격
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(),
-                            child: Text(
-                              '확인',
-                              style: TextStyle(fontSize: 16),
-                            ),
                             style: TextButton.styleFrom(
-                              backgroundColor: Colors.blue, // 버튼 배경색
-                              primary: Colors.white, // 버튼 텍스트 색상
-                              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 5), // 패딩
+                              foregroundColor: Colors.white, backgroundColor: Colors.blue, // 버튼 텍스트 색상
+                              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 5), // 패딩
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8), // 모서리 둥글기
                               ),
+                            ),
+                            child: const Text(
+                              '확인',
+                              style: TextStyle(fontSize: 16),
                             ),
                           ),
                         ],
@@ -141,12 +138,12 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text("Consent and Email Verification"),
+        title: const Text("Consent and Email Verification"),
         backgroundColor: backgroundColor,
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -157,20 +154,20 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
                   text: TextSpan(
                     style: TextStyle(color: foregroundColor, fontSize: 16),
                     children: [
-                      TextSpan(text: "I agree to the "),
+                      const TextSpan(text: "I agree to the "),
                       TextSpan(
                         text: "Terms of Service",
-                        style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                        style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () async {
                             String markdownData = await rootBundle.loadString("assets/texts/terms_of_service.md");
                             _showPolicyDialog("Terms of Service", markdownData);
                           },
                       ),
-                      TextSpan(text: " and "),
+                      const TextSpan(text: " and "),
                       TextSpan(
                         text: "Privacy Policy",
-                        style: TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                        style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
                         recognizer: TapGestureRecognizer()
                           ..onTap = () async {
                             String markdownData = await rootBundle.loadString("assets/texts/privacy_policy.md");
@@ -188,7 +185,7 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
                 },
                 controlAffinity: ListTileControlAffinity.trailing,
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               // 이메일 인증 섹션
               Visibility(
                 visible: _isConsentGiven && !isGoogleUser,
@@ -196,7 +193,7 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text("An email verification has been sent to your email.", style: TextStyle(color: foregroundColor, fontSize: 16)),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Row(
                       children: <Widget>[
                         ElevatedButton(
@@ -213,15 +210,15 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
                             style: TextStyle(color: foregroundColor),
                           ),
                         ),
-                        Spacer(),
+                        const Spacer(),
                         Visibility(
                           visible: _isEmailVerified,
-                          child: Icon(
+                          child: const Icon(
                             Icons.check_circle,
                             color: Colors.green,
                           ),
                         ),
-                        SizedBox(width: 8),
+                        const SizedBox(width: 8),
                       ],
                     )
                   ],
@@ -235,7 +232,7 @@ class _ConsentAndVerificationScreenState extends State<ConsentAndVerificationScr
         child: Visibility(
           visible: _isConsentGiven && (isGoogleUser || _isEmailVerified),
           child: Padding(
-            padding: EdgeInsets.only(bottom: 25, top: 20, left: 20, right: 20),
+            padding: const EdgeInsets.only(bottom: 25, top: 20, left: 20, right: 20),
             child: ElevatedButton(
               onPressed: () async {
                 User? firebaseUser = _firebaseAuth.currentUser;

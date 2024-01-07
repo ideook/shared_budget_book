@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_budget_book/main.dart';
-import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
+import 'package:earnedon/main.dart';
+import 'package:earnedon/services/firebase_analytics_manager.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void _checkAuthentication() async {
     FirebaseAuth.instance.authStateChanges().listen((User? user) {
       if (user == null) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
       } else {
         // 메인 화면으로 직접 이동하기
         FirebaseAnalyticsManager analyticsManager = FirebaseAnalyticsManager();
@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: SafeArea(
         child: Center(
           child: CircularProgressIndicator(), // 로딩 인디케이터 표시

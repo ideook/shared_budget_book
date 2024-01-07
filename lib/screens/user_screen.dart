@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_budget_book/models/user_model.dart';
-import 'package:shared_budget_book/provider/user_model_provider.dart';
-import 'package:shared_budget_book/screens/login_screen.dart';
-import 'package:shared_budget_book/screens/settings_screen.dart';
-import 'package:shared_budget_book/services/auth_service.dart';
+import 'package:earnedon/models/user_model.dart';
+import 'package:earnedon/provider/user_model_provider.dart';
+import 'package:earnedon/screens/login_screen.dart';
+import 'package:earnedon/screens/settings_screen.dart';
+import 'package:earnedon/services/auth_service.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({
@@ -38,9 +37,16 @@ class _UserScreenState extends State<UserScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
+        title: Text('사용자'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context, 0); // 결과로 인덱스를 전달
+          },
+        ),
         actions: [
           IconButton(
-            icon: Icon(Icons.settings),
+            icon: const Icon(Icons.settings),
             onPressed: () {
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
             },
@@ -49,7 +55,7 @@ class _UserScreenState extends State<UserScreen> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -60,7 +66,7 @@ class _UserScreenState extends State<UserScreen> {
                       backgroundImage: NetworkImage(userModel.profilePicture),
                       radius: 30,
                     ),
-                    SizedBox(width: 20),
+                    const SizedBox(width: 20),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,10 +91,10 @@ class _UserScreenState extends State<UserScreen> {
                   authService.signOut();
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
                   );
                 },
-                child: Text(
+                child: const Text(
                   '로그아웃',
                   style: TextStyle(color: Colors.red, fontSize: 20.0),
                 ),

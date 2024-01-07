@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_budget_book/models/user_data.dart';
-import 'package:shared_budget_book/provider/shared_user_provider.dart';
+import 'package:earnedon/models/user_data.dart';
+import 'package:earnedon/provider/shared_user_provider.dart';
 
 class ShareScreen extends StatefulWidget {
   const ShareScreen({
@@ -30,17 +30,17 @@ class _ShareScreenState extends State<ShareScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('공유 해제'),
-          content: Text('공유를 해제하겠습니까?'),
+          title: const Text('공유 해제'),
+          content: const Text('공유를 해제하겠습니까?'),
           actions: <Widget>[
             TextButton(
-              child: Text('취소'),
+              child: const Text('취소'),
               onPressed: () {
                 Navigator.of(context).pop(); // 다이얼로그 닫기
               },
             ),
             TextButton(
-              child: Text('해제'),
+              child: const Text('해제'),
               onPressed: () {
                 _deleteUser(user); // 사용자 삭제 처리
                 Navigator.of(context).pop(); // 다이얼로그 닫기
@@ -60,11 +60,11 @@ class _ShareScreenState extends State<ShareScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text('공유'),
+        title: const Text('공유'),
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.only(top: 20.0),
+          padding: const EdgeInsets.only(top: 20.0),
           child: Column(
             children: [
               Expanded(
@@ -74,15 +74,16 @@ class _ShareScreenState extends State<ShareScreen> {
                     var user = sharedUsers[index];
                     String formattedDate = DateFormat('yyyy-MM-dd').format(user.datetime);
                     return Padding(
-                      padding: EdgeInsets.only(left: 10),
+                      padding: const EdgeInsets.only(left: 10),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundImage: AssetImage(user.iconPath),
+                          backgroundImage: NetworkImage(user.iconPath),
+                          radius: 10,
                         ),
                         title: Text(user.name),
                         subtitle: Text(formattedDate),
                         trailing: IconButton(
-                          icon: Icon(Icons.delete),
+                          icon: const Icon(Icons.delete),
                           onPressed: () => _confirmDelete(user), // 삭제 확인 다이얼로그 호출
                         ),
                       ),
@@ -96,7 +97,7 @@ class _ShareScreenState extends State<ShareScreen> {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: EdgeInsets.only(bottom: 25, top: 20, left: 20, right: 20),
+          padding: const EdgeInsets.only(bottom: 25, top: 20, left: 20, right: 20),
           child: Visibility(
             // Visibility 위젯 사용
             child: ElevatedButton(

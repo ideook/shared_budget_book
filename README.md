@@ -1,16 +1,37 @@
-# shared_budget_book
+# grgreen_apps
 
-A new Flutter project.
+## Architecture
 
-## Getting Started
+- flutter + getx + http + mvc pattern
 
-This project is a starting point for a Flutter application.
+## 패키지명 변경 커맨드
 
-A few resources to get you started if this is your first Flutter project:
+- flutter pub run change_app_package_name:main com.grgreen.apps
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 아이콘 생성 커맨드
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- flutter pub run flutter_launcher_icons:main
+
+## keystore generate
+
+- keytool -genkey -v -keystore .\my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+- keytool -genkey -v -keystore C:/Users/ideoo/.android/debug.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+
+## 파이어베이스 연동
+
+- firebase login
+- dart pub global activate flutterfire_cli
+- flutterfire configure
+
+## 알림 아이콘 변경
+
+- android/app/src/main/res/mipmap에 있는 ic_launcher 파일 들 변경
+
+## 안드로이드 키 확인
+
+- keytool -keystore C:/Users/ideoo/.android/debug.keystore -list -v
+- keytool -list -v -keystore C:/Users/ideoo/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+
+## 카카오 해시 키 생성
+
+- echo {SHA-1 KEY} | xxd -r -p | openssl base64

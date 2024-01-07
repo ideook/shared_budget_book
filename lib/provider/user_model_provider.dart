@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_budget_book/models/user_data.dart';
-import 'package:shared_budget_book/models/user_model.dart';
+import 'package:earnedon/models/user_model.dart';
 
 class UserModelProvider with ChangeNotifier {
   UserModel? _user;

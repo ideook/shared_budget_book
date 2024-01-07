@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_budget_book/provider/summary_date_provider.dart';
-import 'package:shared_budget_book/provider/view_mode_provider.dart';
-import 'package:shared_budget_book/screens/login_screen.dart';
-import 'package:shared_budget_book/screens/share_screen.dart';
-import 'package:shared_budget_book/services/auth_service.dart';
-import 'package:shared_budget_book/services/money_input_formatter.dart';
+import 'package:earnedon/provider/summary_date_provider.dart';
+import 'package:earnedon/provider/view_mode_provider.dart';
+import 'package:earnedon/screens/share_screen.dart';
+import 'package:earnedon/services/auth_service.dart';
+import 'package:earnedon/services/money_input_formatter.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -68,13 +67,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           actions: <Widget>[
             TextButton(
-              child: Text('취소'),
+              child: const Text('취소'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text('저장'),
+              child: const Text('저장'),
               onPressed: () {
                 setState(() {
                   String input = controller.text.replaceAll(',', ''); // 쉼표 제거
@@ -100,6 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     Color backgroundColor = const Color(0xFF121212); // 배경 색상
     var prov = Provider.of<SummaryDataProvider>(context, listen: false);
+    var provViewModeProvider = Provider.of<ViewModeProvider>(context, listen: false);
 
     _weeklyBudget = prov.budget_weekly;
     _monthlyBudget = prov.budget_montly;
@@ -107,17 +107,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text('설정'),
+        title: const Text('설정'),
         leading: IconButton(
-          icon: Icon(Icons.close), // 닫기 아이콘 사용
+          icon: const Icon(Icons.close), // 닫기 아이콘 사용
           onPressed: () {
-            Navigator.of(context).pop(); // 현재 화면을 닫고 이전 화면으로 돌아감
+            Navigator.popUntil(context, ModalRoute.withName('/'));
+            //Navigator.pop(context, 0); // 현재 화면을 닫고 이전 화면으로 돌아감
           },
         ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -131,16 +132,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Row(
                     children: [
                       Text(
-                        isWeeklyView ? '주간' : '월간',
+                        provViewModeProvider.isWeeklyView ? '주간' : '월간',
                         style: const TextStyle(fontSize: 16.0),
                       ),
                       const SizedBox(width: 10),
                       Switch(
-                        value: Provider.of<ViewModeProvider>(context, listen: false).isWeeklyView,
+                        value: provViewModeProvider.isWeeklyView,
                         onChanged: (bool value) {
                           setState(() {
-                            Provider.of<ViewModeProvider>(context, listen: false).toggleViewMode();
-                            isWeeklyView = !isWeeklyView;
+                            provViewModeProvider.toggleViewMode();
+                            //isWeeklyView = !isWeeklyView;
                           });
                         },
                       ),
@@ -155,7 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 15),
               Padding(
-                padding: EdgeInsets.only(left: 0),
+                padding: const EdgeInsets.only(left: 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -268,6 +269,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '개요 펼치기',
+                    style: TextStyle(fontSize: 20.0),
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        provViewModeProvider.isExpanded ? '펼치기' : '닫기',
+                        style: const TextStyle(fontSize: 16.0),
+                      ),
+                      const SizedBox(width: 10),
+                      Switch(
+                        value: provViewModeProvider.isExpanded,
+                        onChanged: (bool value) {
+                          setState(() {
+                            provViewModeProvider.toggleSummaryExpand();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

@@ -3,9 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>81130982036-hpd4q9e3vo5gqu3ef9jo25b7qasf23u0.apps.googleusercontent.com</string>
+	<string>81130982036-kpqs838l88lrdea2sni0seo8802kngbk.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.81130982036-hpd4q9e3vo5gqu3ef9jo25b7qasf23u0</string>
+	<string>com.googleusercontent.apps.81130982036-kpqs838l88lrdea2sni0seo8802kngbk</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>81130982036-q1pcla86vc04kcbu1dlajf4skjjlsqt9.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyBkWZeNO0h411lokVuwoBJI4x7qehswOU0</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.brdg.earnedon</string>
+	<string>com.example.sharedBudgetBook.RunnerTests</string>
 	<key>PROJECT_ID</key>
 	<string>earnedon-6ce38</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:81130982036:ios:add79ef00eef94e6e08281</string>
+	<string>1:81130982036:ios:3965fed1759bf080e08281</string>
 </dict>
 </plist>

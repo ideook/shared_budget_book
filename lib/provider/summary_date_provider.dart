@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:shared_budget_book/models/expense_item.dart';
+import 'package:earnedon/models/expense_item.dart';
 
 class SummaryDataProvider with ChangeNotifier {
   num _budget_montly = 200000.0;
   num _budget_weekly = 50000.0;
   num _expenses = 0.0;
   num _balance = 50000.0;
-  Map<String, num> _specificMonthlyBudgets = {};
-  Map<String, num> _specificWeeklyBudgets = {};
+  DateTime _selectedDate = DateTime.now();
+  final Map<String, num> _specificMonthlyBudgets = {};
+  final Map<String, num> _specificWeeklyBudgets = {};
 
   num get budget_montly => _budget_montly;
   num get budget_weekly => _budget_weekly;
   num get expenses => _expenses;
   num get balance => _balance;
+  DateTime get selectedDate => _selectedDate;
 
   /// 주별 예산을 설정합니다.
   /// [budget]은 주별로 할당된 총 예산 금액입니다.
@@ -61,6 +63,11 @@ class SummaryDataProvider with ChangeNotifier {
   /// [budget]은 해당 월에 할당된 예산 금액입니다.
   void setSpecificMonthlyBudget(String month, num budget) {
     _specificMonthlyBudgets[month] = budget;
+    notifyListeners();
+  }
+
+  void setCurrentDate(DateTime selectedDate) {
+    _selectedDate = selectedDate;
     notifyListeners();
   }
 

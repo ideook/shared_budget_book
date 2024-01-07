@@ -1,48 +1,48 @@
 {
   "project_info": {
-    "project_number": "928534842281",
-    "project_id": "shared-budget-book",
-    "storage_bucket": "shared-budget-book.appspot.com"
+    "project_number": "81130982036",
+    "project_id": "earnedon-6ce38",
+    "storage_bucket": "earnedon-6ce38.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:928534842281:android:50bb1c1b7a3b913af192b8",
+        "mobilesdk_app_id": "1:81130982036:android:b69e1e154145fd8de08281",
         "android_client_info": {
-          "package_name": "com.example.shared_budget_book"
+          "package_name": "com.brdg.earnedon"
         }
       },
       "oauth_client": [
         {
-          "client_id": "928534842281-qa573n25327eke9l450nmapf2n130kak.apps.googleusercontent.com",
+          "client_id": "81130982036-q1pcla86vc04kcbu1dlajf4skjjlsqt9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.shared_budget_book",
-            "certificate_hash": "9ef47d06ea4da21583feb373d2dceac0d001f87a"
+            "package_name": "com.brdg.earnedon",
+            "certificate_hash": "d2031370a7879449285aaea114263c82481fbf38"
           }
         },
         {
-          "client_id": "928534842281-i1j7ghts4mdim4qof3uhgsh620e5ahst.apps.googleusercontent.com",
+          "client_id": "81130982036-pbj8557arcntq12q8bm1e3l2bsh3d4uh.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAMYeeo-j2dQxZumwD4N47BCdWjsfUCWCw"
+          "current_key": "AIzaSyDNNw4u4t15ZjqV6OhZnq9RT1SuptsQmLA"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "928534842281-i1j7ghts4mdim4qof3uhgsh620e5ahst.apps.googleusercontent.com",
+              "client_id": "81130982036-pbj8557arcntq12q8bm1e3l2bsh3d4uh.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "928534842281-9fokcdmshcv5sl97mc55d2klg7bnvoco.apps.googleusercontent.com",
+              "client_id": "81130982036-hpd4q9e3vo5gqu3ef9jo25b7qasf23u0.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.sharedBudgetBook"
+                "bundle_id": "com.brdg.earnedon"
               }
             }
           ]

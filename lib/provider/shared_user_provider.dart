@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_budget_book/models/user_data.dart';
+import 'package:earnedon/models/user_data.dart';
 
 class SharedUserProvider with ChangeNotifier {
-  List<UserData> _sharedUsers = [];
+  final List<UserData> _sharedUsers = [];
 
   List<UserData> get sharedUsers => _sharedUsers;
 

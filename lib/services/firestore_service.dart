@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_budget_book/models/user_model.dart';
+import 'package:earnedon/models/expense_item.dart';
+import 'package:earnedon/models/user_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -24,5 +25,15 @@ class FirestoreService {
     await _db.collection('users').doc(userId).update({
       'lastSignInAt': FieldValue.serverTimestamp(), // 서버 시간으로 설정
     });
+  }
+
+  Future<void> addExpenseItem(ExpenseItem expenseItem) async {
+    await _db.collection('expenseItems').add(expenseItem.toMap());
+  }
+
+  Future<List<ExpenseItem>> getExpenseItems(String userId) async {
+    var snapshot = await _db.collection('expenseItems').where('userId', isEqualTo: userId).get();
+
+    return snapshot.docs.map((doc) => ExpenseItem.fromMap(doc.data(), doc.id)).toList();
   }
 }

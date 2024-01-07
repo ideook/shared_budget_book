@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
-import 'package:shared_budget_book/main.dart';
-import 'package:shared_budget_book/models/user_model.dart';
-import 'package:shared_budget_book/screens/consent_verification_screen.dart';
-import 'package:shared_budget_book/services/firebase_analytics_manager.dart';
+import 'package:earnedon/models/user_model.dart';
+import 'package:earnedon/services/firebase_analytics_manager.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthService {
